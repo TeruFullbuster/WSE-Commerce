@@ -4,6 +4,6 @@ import { POSTSesion } from '../controllers/Sesiones.controllers.js'
 
 const router = Router()
 
-router.get('/InsertaSesion' , POSTSesion)
+router.post('/InsertaSesion' , POSTSesion)
 
 export default router

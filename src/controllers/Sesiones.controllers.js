@@ -1,17 +1,20 @@
 import { pool } from '../db.js'
 
 export const POSTSesion  = async (req, res) => {
-    /*console.log('Si aca ando')
-    console.log(req.query)
-    const area = req.query.area;
-    const perfil = req.query.perfil;*/
+    const {URL,FechaDCreacion,IP} = req.body
     try {
-    const [rows] = await pool.query('SELECT * FROM EjemploEmpleados')
-            res.json(rows)
-        
+    const [rows] = await pool.query('INSERT INTO Sesiones (URL,FechaDCreacion,IP) VALUES (?,?,?,?)', [nombreContacto,Puesto,Celular,Mail,Razon,RFC,NombreEmpresa,Autorizada])
+    //console.log(rows) 
+    res.send({
+        message: "Registro Exitoso",
+        id: rows.insertId,
+        URL,
+        FechaDCreacion,
+        IP
+    })
     } catch (error) {
         return res.status(500).json({
-            message: ' Algo esta mal aca toy'
+            message: ' Algo esta mal'
         })
     }
 }
