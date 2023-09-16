@@ -39,3 +39,23 @@ export const PutSesion = async(req, res) => {
         })
     }
 }
+
+export const PutPass = async(req, res) => {
+    const {Paso,id} = req.body
+    try {    
+    const [result] = await pool.query('UPDATE Sesiones SET Paso = ? WHERE id = ?', [Paso,id])
+    console.log(result)
+
+    if (result.affectedRows === 0) return res.status(404).json({
+        message: 'Empleado no encontrado'
+    })
+    res.send({
+        message: "Actualización Exitoso"    
+    })
+
+    } catch (error) {
+        return res.status(500).json({
+            message: ' Algo esta mal'
+        })
+    }
+}
