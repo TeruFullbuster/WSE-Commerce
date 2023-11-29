@@ -33,8 +33,7 @@ const enviarCorreo = async (destinatario, asunto, cuerpo) => {
         // Envía el correo
         const info = await transporter.sendMail(mailOptions);
         console.log(info)
-        console.log('Correo enviado:', info.response);
-        console.log('IP utilizada para enviar el correo:', transporter.transport.options.host);
+        console.log('Correo enviado:', info.response);        
     } catch (error) {
         console.error('Error al enviar el correo:', error);
     }
