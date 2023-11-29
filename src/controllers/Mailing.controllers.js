@@ -3,7 +3,7 @@ import { pool } from '../db.js'
 import nodemailer from 'nodemailer';
 
 export const POSTSesion  = async (req, res) => {
-    enviarCorreo("terufullbustee@gmail.com", "Prueba", "Prueba")
+    enviarCorreo("carlos.mendoza@beenear.mx",["terufullbuster@icloud.com", "addiel.mendoza@beenear.mx"], "Prueba Angel Ruiz", "Prueba Angel Ruiz")
     return res.json({ message: "POSTSesion Works" })
 }
 
@@ -14,18 +14,19 @@ const transporter = nodemailer.createTransport({
     port: 465,
     secure: true, // Utiliza SSL
     auth: {
-        user: 'prueba@beenear.mx',
-        pass: 'fG7IxBpDAvm4'
+        user: 'moreinfo@beenear.mx',
+        pass: 'iGVy3JS9lc*#'
     }
 });
 
 // Función para enviar correo
-const enviarCorreo = async (destinatario, asunto, cuerpo) => {
+const enviarCorreo = async (destinatario, cc, asunto, cuerpo) => {
     try {
         // Configura el contenido del correo
         const mailOptions = {
-            from: 'prueba@beenear.mx',
+            from: 'moreinfo@beenear.mx',
             to: destinatario,
+            cc: cc,
             subject: asunto,
             text: cuerpo
         };
