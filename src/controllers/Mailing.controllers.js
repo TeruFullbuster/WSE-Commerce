@@ -3,8 +3,19 @@ import { pool } from '../db.js'
 import nodemailer from 'nodemailer';
 
 export const POSTSesion  = async (req, res) => {
-    enviarCorreo("carlos.mendoza@beenear.mx",["terufullbuster@icloud.com", "addiel.mendoza@beenear.mx"], "Prueba Angel Ruiz", "Prueba Angel Ruiz")
-    return res.json({ message: "POSTSesion Works" })
+
+        const { fullname, email, phone, requeriment } = req.body;
+
+        try {
+            enviarCorreo("carlos.mendoza@beenear.mx", ["addiel.mendoza@beenear.mx", "terufullbuster@icloud.com"], "Prospecto Registrado: " + fullname, "Nombre: " + fullname + "\n" + "Correo: " + email + "\n" + "Telefono: " + phone + "\n" + "Requerimiento: " + requeriment);
+
+            // Si no se lanza una excepción, significa que el correo se envió correctamente
+            return res.json({ message: "Correo enviado con éxito" });
+        } catch (error) {
+            console.error('Error al enviar el correo:', error);
+            // En caso de error, puedes devolver un mensaje de error
+            return res.status(500).json({ error: "Error al enviar el correo" });
+        }
 }
 
 
@@ -30,6 +41,7 @@ const enviarCorreo = async (destinatario, cc, asunto, cuerpo) => {
             subject: asunto,
             text: cuerpo
         };
+        console.log(mailOptions)
 
         // Envía el correo
         const info = await transporter.sendMail(mailOptions);
