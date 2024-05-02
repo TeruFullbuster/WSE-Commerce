@@ -6,7 +6,7 @@ export const cotizaciones  = async (req, res) => {
     
     try {
         // Ejecutar la petición HTTP utilizando fetch
-        const response = await fetch('https://servicioswebqa.axa.com.mx:9921/v1.0/cotizaciones/datosPlanmed', {
+        const response = await fetch('https://serviciosweb.axa.com.mx:9921/v1.0/cotizaciones/datosPlanmed', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
