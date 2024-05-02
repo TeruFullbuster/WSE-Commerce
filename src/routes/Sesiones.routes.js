@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { POSTSesion , PutSesion, PutPass } from '../controllers/Sesiones.controllers.js'
+import { POSTSesion , PutSesion, PutPass , POSTFormulario } from '../controllers/Sesiones.controllers.js'
 
 const router = Router()
 
@@ -10,5 +10,6 @@ router.put('/ActualizacionSesion' , PutSesion)
 
 router.put('/ActualizaPaso' , PutPass)
 
+router.post('/RegistroLinkedIn' , POSTFormulario)
 
 export default router

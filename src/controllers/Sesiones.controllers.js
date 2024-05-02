@@ -59,3 +59,25 @@ export const PutPass = async(req, res) => {
         })
     }
 }
+
+
+export const POSTFormulario  = async (req, res) => {
+    const {Nombre,Apellidos,Correo,Telefono, Origen} = req.body
+    const HoradeRegistro = new Date()
+    try {
+    const [rows] = await pool.query('INSERT INTO FormulariosLinkedIN (Nombre,Apellidos,Correo,Telefono, Origen , HoradeRegistro) VALUES (?,?,?,?)', [Nombre,Apellidos,Correo,Telefono, Origen, HoradeRegistro])
+    //console.log(rows) 
+    res.send({
+        message: "Registro Exitoso",
+        id: rows.insertId,
+        URL,
+        FechaDCreacion,
+        IP,
+        primaTotal
+    })
+    } catch (error) {
+        return res.status(500).json({
+            message: ' Algo esta mal'
+        })
+    }
+}
