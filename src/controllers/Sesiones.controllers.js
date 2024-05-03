@@ -85,7 +85,7 @@ export const POSTFormulario  = async (req, res) => {
             HoradeRegistro
             // Agrega más columnas según sea necesario
             };
-
+            EnviarMail(Correo , Origen)
             return res.status(200).json({
             message: 'Inserción exitosa',
             response: insertedData
@@ -103,6 +103,64 @@ export const POSTFormulario  = async (req, res) => {
       }
 }
 
-function EnviarMail() {
-    
+function EnviarMail(Email) {
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    const Resource = ObtenerResource(Origen)
+    const raw = JSON.stringify({
+    "DATOSHERRAMIENTAS": {
+        "Destinatario": "aruiz@segurointeligente.mx",
+        "MensajeCorreo": `<html lang=\"es\"><head><meta charset=\"utf-8\"><meta http-equiv=\"X-UA-Compatible\" 
+        content=\"IE=edge\"><meta name=\"viewport\" content=\"width=device-width, initial-scale=1\"></head>
+        <body style=\"width: 600px; text-align: center; margin: 25px auto; font-family: sans-serif;\">
+        <div style=\"padding: 0 0 25px;\"><img src=\" ${Resource}\" alt=\"Gabriel Landero\" width=\"210px\">
+        </div><h1 style=\"font-size: 25pt; color: #009BDD; font-weight: 900; padding: 15px; margin-bottom: 0;\">¡Registro Exitoso!</h1>
+        <p style=\"font-size: 14pt; padding: 15px; margin-top: 0;\">Preparate para disfrutar de este experiencia, 
+        a continuación esta el link para que puedas acceder a la conferencia el dia 6 de Mayo </p>
+        <p style=\"font-size: 14pt; padding: 0px; margin-top: 0;\"><br> Empodera Training le está invitando a una
+         reunión de Zoom programada.Tema: <br> Estrategias de prospección . SI AQS Hora: 6 may 2024 11:00 a. m. Ciudad de 
+         México <br> Entrar Zoom Reunión <br> https://us06web.zoom.us/j/86398060240?pwd=HSNqYTX4razlquhakW7j359D0GKf4n.1 <br> 
+         ID de reunión: 863 9806 0240 <br> Código de acceso: 320053 </p><p style=\"font-size: 14pt; padding: 0px; margin-top: 0;\">
+         </p></body></html>`,
+        "PerfilCorreo": "Invitacion SI",
+        "AsuntoCorreo": "Gracias por tu registro!",
+        "CopyEmail": ""
+    }
+    });
+
+    const requestOptions = {
+    method: "POST",
+    headers: myHeaders,
+    body: raw,
+    redirect: "follow"
+    };
+
+    fetch("https://wsservicios.gmag.com.mx/HerramientasDesarrollo/EnviarCorreo", requestOptions)
+    .then((response) => response.json())
+    .then((result) => {
+        console.log(result)
+    })
+    .catch((error) => console.error(error));
+}
+
+const ObtenerResource = (Origen) =>{
+    let Resource = ""
+    switch (Origen) {
+        case "DoraLuz":
+            Resource = "https://siaqs.com/Eventos/DoraLuz/img/Landero.png"
+            break;
+        case "SIAQS":
+            Resource = "https://siaqs.com/Eventos/SIAQS/img/Landero.png"
+            break;
+        case "VisionSeguro":
+            Resource = "https://siaqs.com/Eventos/VisionSeguro/img/Landero.png"
+            break;
+        case "RoqueAlonso":
+            Resource = "https://siaqs.com/Eventos/RoqueAlonso/img/Landero.png"
+            break;
+        default:
+            Resource = "https://siaqs.com/Eventos/SIAQS/img/Landero.png"
+            break;
+    }
+    return Resource
 }
