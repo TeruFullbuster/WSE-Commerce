@@ -103,7 +103,7 @@ export const POSTFormulario  = async (req, res) => {
       }
 }
 
-function EnviarMail(Email) {
+function EnviarMail(Email , Origen) {
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
     const Resource = ObtenerResource(Origen)
