@@ -102,3 +102,7 @@ export const POSTFormulario  = async (req, res) => {
         });
       }
 }
+
+function EnviarMail() {
+    
+}

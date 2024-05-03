@@ -1,16 +1,17 @@
 import { pool } from '../db.js'
 
 export const cotizaciones  = async (req, res) => {
+    console.log('Cotizaciones')
     const { token, datosPersonales , datosDomicilio  } = req.body;
     const hora = obtenerFechaHoraActual();
-    
+    console.log(token)
     try {
         // Ejecutar la petición HTTP utilizando fetch
         const response = await fetch('https://serviciosweb.axa.com.mx:9921/v1.0/cotizaciones/datosPlanmed', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': 'Basic YW5nX3NhbHVkX2NvdGl6YWRvcl92cGlfa2VyYWx0eTo0YjVhZDBmY2VjYTk0ZDE0OGExYTJkNWRlMDU4M2MwYg==, Bearer ' + token
+                'Authorization': 'Basic c2VndXJvX2ludGVsaWdlbnRlX2tlcmFsdHk6Y2JiOWRhYzQ3MTc4NDY2MDhmMWQwODcyYmM2ZmRjYzc=, Bearer ' + token
             },
             body: JSON.stringify({
                 "axaHeaderReq": {
@@ -50,7 +51,7 @@ export const cotizaciones  = async (req, res) => {
             })
             
         });
-        
+    
         // Verificar el estado de la respuesta
         if (response.ok) {
             const data = await response.json();
