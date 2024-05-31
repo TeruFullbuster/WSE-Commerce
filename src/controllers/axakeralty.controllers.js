@@ -5,6 +5,44 @@ export const cotizaciones  = async (req, res) => {
     const { token, datosPersonales , datosDomicilio  } = req.body;
     const hora = obtenerFechaHoraActual();
     console.log(token)
+
+    var raw = JSON.stringify({
+        "axaHeaderReq": {
+            "usuario": "MXS00101688A",
+            "sistemaId": "AQS",
+            "UUID": "f1a9f044-0a60-0030-0750-0a95f5580115",
+            "fechaHora": hora
+        },
+        "data": {
+            "persona": {
+                "primerNombre": datosPersonales.primerNombre,
+                "apellidoPaterno": datosPersonales.apellidoPaterno,
+                "apellidoMaterno": datosPersonales.apellidoMaterno,
+                "fechaNacimiento": datosPersonales.fechaNacimiento,
+                "genero": datosPersonales.genero,
+                "correoElectronico": datosPersonales.correoElectronico,
+                "telefonoContacto": datosPersonales.telefonoContacto,
+                "codigoPostal": datosPersonales.codigoPostal,
+                "nacionalidad": datosPersonales.nacionalidad,
+                "entidadNacimiento": datosPersonales.entidadNacimiento,
+                "numeroDocumento": datosPersonales.noDocumento,
+                "id": datosPersonales.id
+            },
+            "domicilio": {
+                "colonia": datosDomicilio.colonia,
+                "calle": datosDomicilio.calle,
+                "numeroExterior": datosDomicilio.numeroExterior,
+                "numeroInterior": datosDomicilio.numeroInterior,
+            },
+            "agente": {
+                "codigo": "300470-A"
+            },
+            "descuento": {
+                "codigo": "300470-A"
+            }
+        }
+    })
+    console.log(raw)
     try {
         // Ejecutar la petición HTTP utilizando fetch
         const response = await fetch('https://serviciosweb.axa.com.mx:9921/v1.0/cotizaciones/datosPlanmed', {
@@ -13,42 +51,7 @@ export const cotizaciones  = async (req, res) => {
                 'Content-Type': 'application/json',
                 'Authorization': 'Basic c2VndXJvX2ludGVsaWdlbnRlX2tlcmFsdHk6Y2JiOWRhYzQ3MTc4NDY2MDhmMWQwODcyYmM2ZmRjYzc=, Bearer ' + token
             },
-            body: JSON.stringify({
-                "axaHeaderReq": {
-                    "usuario": "MXS00101688A",
-                    "sistemaId": "AQS",
-                    "UUID": "f1a9f044-0a60-0030-0750-0a95f5580115",
-                    "fechaHora": hora
-                },
-                "data": {
-                    "persona": {
-                        "primerNombre": datosPersonales.primerNombre,
-                        "apellidoPaterno": datosPersonales.apellidoPaterno,
-                        "apellidoMaterno": datosPersonales.apellidoMaterno,
-                        "fechaNacimiento": datosPersonales.fechaNacimiento,
-                        "genero": datosPersonales.genero,
-                        "correoElectronico": datosPersonales.correoElectronico,
-                        "telefonoContacto": datosPersonales.telefonoContacto,
-                        "codigoPostal": datosPersonales.codigoPostal,
-                        "nacionalidad": datosPersonales.nacionalidad,
-                        "entidadNacimiento": datosPersonales.entidadNacimiento,
-                        "numeroDocumento": datosPersonales.noDocumento,
-                        "id": datosPersonales.id
-                    },
-                    "domicilio": {
-                        "colonia": datosDomicilio.colonia,
-                        "calle": datosDomicilio.calle,
-                        "numeroExterior": datosDomicilio.numeroExterior,
-                        "numeroInterior": datosDomicilio.numeroInterior,
-                    },
-                    "agente": {
-                        "codigo": "300470-A"
-                    },
-                    "descuento": {
-                        "codigo": "300470-A"
-                    }
-                }
-            })
+            body: raw 
             
         });
     
@@ -87,3 +90,4 @@ const obtenerFechaHoraActual = () => {
 
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${timezone}`;
 };
+
