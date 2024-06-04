@@ -5,7 +5,7 @@ export const cotizaciones  = async (req, res) => {
     const { token, datosPersonales , datosDomicilio  } = req.body;
     const hora = obtenerFechaHoraActual();
     console.log(token)
-
+    
     var raw = JSON.stringify({
         "axaHeaderReq": {
             "usuario": "MXS00101688A",
@@ -60,6 +60,8 @@ export const cotizaciones  = async (req, res) => {
             const data = await response.json();
             console.log(data); // Aquí está el cuerpo de la respuesta JSON
             // Puedes retornar los datos en tu respuesta HTTP
+            const [rows] = await pool.query('INSERT INTO RespuestasAXAKeralty (Nombre,Token,Request,Response, Fecha) VALUES (?,?,?,?,?)', [datosPersonales.primerNombre,token,raw,JSON.stringify(data),hora])
+            console.log(rows)
             res.status(200).json(data);
         } else {
             // Si la petición falla, devolver un mensaje de error
@@ -68,6 +70,8 @@ export const cotizaciones  = async (req, res) => {
     } catch (error) {
         // Manejar los errores y devolver una respuesta de error HTTP
         console.error(error);
+        const [rows] = await pool.query('INSERT INTO RespuestasAXAKeralty (Nombre,Token,Request,Response, Fecha) VALUES (?,?,?,?,?)', [datosPersonales.primerNombre,token,raw,JSON.stringify(error),hora])
+        console.log(rows)
         res.status(500).json({ message: 'Algo salió mal' });
     }
 }
