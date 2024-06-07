@@ -35,10 +35,10 @@ export const cotizaciones  = async (req, res) => {
                 "numeroInterior": datosDomicilio.numeroInterior,
             },
             "agente": {
-                "codigo": "300470-A"
+                "codigo": "300470"
             },
             "descuento": {
-                "codigo": "300470-A"
+                "codigo": "300470"
             }
         }
     })
