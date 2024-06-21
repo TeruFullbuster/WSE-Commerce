@@ -1,6 +1,9 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
 
+const TokenZoho = "ozohocsrcoo=db6d98c6a41b929001e0c74417a3c89e021b9d1b4037f72f71bacee1d26a42f069035e4a0751ee875cc6850087b21d17cd14f7586f436edbcaec5764e7a2f438";
+const CookieZoho = "_iamadt=41ce4fbc40b932094546bfd7e56daf80d3c75de9d4792b67eac6ddd4798ffbe932a7c4e225e7feb8712d6c04babf6129a75635a2a43b11f3d2bcce7d302bb954; _iambdt=d79ba1e96f7d869da8243c42f0d9a9bc681c4951771be17f8d4ca1cbb185bfd3375eb907d4b657ab8bd8c45592ab8ce8800b1ecb42dafd8214fdbb989ce03004; wms-tkp-token=800473062-7e2a4ecd-ba39c1bfcfc597dea150df12e93355f4; ozohocsr=db6d98c6a41b929001e0c74417a3c89e021b9d1b4037f72f71bacee1d26a42f069035e4a0751ee875cc6850087b21d17cd14f7586f436edbcaec5764e7a2f438; _zcsr_tmp=db6d98c6a41b929001e0c74417a3c89e021b9d1b4037f72f71bacee1d26a42f069035e4a0751ee875cc6850087b21d17cd14f7586f436edbcaec5764e7a2f438; CT_CSRF_TOKEN=db6d98c6a41b929001e0c74417a3c89e021b9d1b4037f72f71bacee1d26a42f069035e4a0751ee875cc6850087b21d17cd14f7586f436edbcaec5764e7a2f438; CSRF_TOKEN=db6d98c6a41b929001e0c74417a3c89e021b9d1b4037f72f71bacee1d26a42f069035e4a0751ee875cc6850087b21d17cd14f7586f436edbcaec5764e7a2f438; com_chat_owner=1718914921563_f; zalb_6feda1cee0=2c31a623bf2e77f060bdaea264a2c0c0; JSESSIONID=BDFBB60B6E0C0484088F59F1A536AEC7; zalb_3309580ed5=5e41c4a69d62a20d11fee6ef8532db03; com_avcliq_owner=1718979763973";
+
 export const RegistroZoho = async (req, res) => {
     const { Nombre, Apellido, Correo } = req.body;
     const Mail = "infraestructura@segurointeligente.mx";
@@ -118,8 +121,8 @@ export const CreateUserZoho = async (req, res) => {
     const { Datos } = req.body; // Extraer los datos del cuerpo de la solicitud
     console.log(Datos)
     const myHeaders = new Headers();
-    myHeaders.append("Cookie", "zohocares-_zldp=YfEOFpfOAG%2FL9h2wm3hJ%2FgfBK1vX09RZESXbTMucH7wUjxdeLfzTJ1cV2UrIuarDb8YSslKh1II%3D; zohocares-_uuid=11fa1669-d6cc-4a86-b9f0-aeab5cfef362_d298; ZohoMarkRef=\"https://www.zoho.com/es-xl/mail/?zsrc=fromproduct\"; 6feda1cee0=19c433fabc01729e3d93a22892540ecc; 3309580ed5=0c4a79d08c61db863a11041128fa1862; ZohoMarkSrc=\"google:mail||google:mail\"; zsca63a3daff87f4d33b6cffbe7a949ff5f=1718242447797zsc0.7546657115583106; zft-sdc=isef%3Dtrue-isfr%3Dtrue-src%3Done.zoho.com; zps-tgr-dts=sc%3D3-expAppOnNewSession%3D%5B%5D-pc%3D1-sesst%3D1718242447798; zohocares-_zldt=96c80fe1-bff2-4da3-bfdd-3f8720142c5c-0; _iamadt=2e3c0ce3364d760c29e5f4f92e012a1d4736e1287723a0fb90c89bb12eebad233d8f9cae072564d0250d3e1cdb5e30e4825701f0e054c5a1bbf96a1eae927f20; _iambdt=a2e760da9034469023695ac2d20ff780bea4c4e87a417cdc70f592445f3192d51d2950ed54b12d4a0397a94423d5dab0106acb44b44f717cbdd99ef9c199e189; ozohocsr=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f; _zcsr_tmp=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f; CT_CSRF_TOKEN=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f; wms-tkp-token=720810430-1158e30d-e26d886919acec866c176cf49ea0fb52; com_chat_owner=1718242485509; com_avcliq_owner=1718242485510; JSESSIONID=5AA018E35EB2A21E2ECCF3A599301F2B; 6feda1cee0=5b566598b2beee6a9bc663a26a2d927c; JSESSIONID=1BCE3BBC293ED97CE4062507B1C374E1; _zcsr_tmp=4bd4cb24-83c4-48dd-a78e-b420d0af8e77; ozohocsr=4bd4cb24-83c4-48dd-a78e-b420d0af8e77");
-    myHeaders.append("X-Zcsrf-Token", "ozohocsrcoo=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f");
+    myHeaders.append("Cookie", CookieZoho);
+    myHeaders.append("X-Zcsrf-Token", TokenZoho);
     myHeaders.append("Content-Type", "application/json");
 
     const raw = JSON.stringify({
@@ -169,8 +172,8 @@ export const SearchEmailZoho = async (req, res) => {
     const { email } = req.query; // Extraer el correo electrónico de los parámetros de la URL
 
     const myHeaders = {
-        "X-Zcsrf-Token": "ozohocsrcoo=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f",
-        "Cookie": "zohocares-_zldp=YfEOFpfOAG%2FL9h2wm3hJ%2FgfBK1vX09RZESXbTMucH7wUjxdeLfzTJ1cV2UrIuarDb8YSslKh1II%3D; zohocares-_uuid=11fa1669-d6cc-4a86-b9f0-aeab5cfef362_d298; ZohoMarkRef=\"https://www.zoho.com/es-xl/mail/?zsrc=fromproduct\"; 6feda1cee0=19c433fabc01729e3d93a22892540ecc; 3309580ed5=0c4a79d08c61db863a11041128fa1862; ZohoMarkSrc=\"google:mail||google:mail\"; zsca63a3daff87f4d33b6cffbe7a949ff5f=1718242447797zsc0.7546657115583106; zft-sdc=isef%3Dtrue-isfr%3Dtrue-src%3Done.zoho.com; zps-tgr-dts=sc%3D3-expAppOnNewSession%3D%5B%5D-pc%3D1-sesst%3D1718242447798; zohocares-_zldt=96c80fe1-bff2-4da3-bfdd-3f8720142c5c-0; _iamadt=2e3c0ce3364d760c29e5f4f92e012a1d4736e1287723a0fb90c89bb12eebad233d8f9cae072564d0250d3e1cdb5e30e4825701f0e054c5a1bbf96a1eae927f20; _iambdt=a2e760da9034469023695ac2d20ff780bea4c4e87a417cdc70f592445f3192d51d2950ed54b12d4a0397a94423d5dab0106acb44b44f717cbdd99ef9c199e189; ozohocsr=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f; _zcsr_tmp=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f; CT_CSRF_TOKEN=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f; wms-tkp-token=720810430-1158e30d-e26d886919acec866c176cf49ea0fb52; com_chat_owner=1718242485509; com_avcliq_owner=1718242485510; JSESSIONID=5AA018E35EB2A21E2ECCF3A599301F2B; 6feda1cee0=5b566598b2beee6a9bc663a26a2d927c; JSESSIONID=1BCE3BBC293ED97CE4062507B1C374E1; _zcsr_tmp=4bd4cb24-83c4-48dd-a78e-b420d0af8e77; ozohocsr=4bd4cb24-83c4-48dd-a78e-b420d0af8e77"
+        "X-Zcsrf-Token": TokenZoho,
+        "Cookie": CookieZoho
     };
 
     const requestOptions = {
@@ -193,8 +196,8 @@ export const SearchEmailZoho = async (req, res) => {
 export const SearchActiveAccountZoho = async (req, res) => {
 
     const myHeaders = {
-        "X-Zcsrf-Token": "ozohocsrcoo=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f",
-        "Cookie": "zohocares-_zldp=YfEOFpfOAG%2FL9h2wm3hJ%2FgfBK1vX09RZESXbTMucH7wUjxdeLfzTJ1cV2UrIuarDb8YSslKh1II%3D; zohocares-_uuid=11fa1669-d6cc-4a86-b9f0-aeab5cfef362_d298; ZohoMarkRef=\"https://www.zoho.com/es-xl/mail/?zsrc=fromproduct\"; 6feda1cee0=19c433fabc01729e3d93a22892540ecc; 3309580ed5=0c4a79d08c61db863a11041128fa1862; ZohoMarkSrc=\"google:mail||google:mail\"; zsca63a3daff87f4d33b6cffbe7a949ff5f=1718242447797zsc0.7546657115583106; zft-sdc=isef%3Dtrue-isfr%3Dtrue-src%3Done.zoho.com; zps-tgr-dts=sc%3D3-expAppOnNewSession%3D%5B%5D-pc%3D1-sesst%3D1718242447798; zohocares-_zldt=96c80fe1-bff2-4da3-bfdd-3f8720142c5c-0; _iamadt=2e3c0ce3364d760c29e5f4f92e012a1d4736e1287723a0fb90c89bb12eebad233d8f9cae072564d0250d3e1cdb5e30e4825701f0e054c5a1bbf96a1eae927f20; _iambdt=a2e760da9034469023695ac2d20ff780bea4c4e87a417cdc70f592445f3192d51d2950ed54b12d4a0397a94423d5dab0106acb44b44f717cbdd99ef9c199e189; ozohocsr=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f; _zcsr_tmp=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f; CT_CSRF_TOKEN=293991f418d3a3a21c1560def491a13f0ad1a589c77432b31e88407bec42fd1a0852cc89f9d11069ccd9806cb3152f147b1efffdf7ba4e51379f11d48228990f; wms-tkp-token=720810430-1158e30d-e26d886919acec866c176cf49ea0fb52; com_chat_owner=1718242485509; com_avcliq_owner=1718242485510; JSESSIONID=5AA018E35EB2A21E2ECCF3A599301F2B; 6feda1cee0=5b566598b2beee6a9bc663a26a2d927c; JSESSIONID=1BCE3BBC293ED97CE4062507B1C374E1; _zcsr_tmp=4bd4cb24-83c4-48dd-a78e-b420d0af8e77; ozohocsr=4bd4cb24-83c4-48dd-a78e-b420d0af8e77"
+        "X-Zcsrf-Token": TokenZoho,
+        "Cookie": CookieZoho
     };
 
     const requestOptions = {
