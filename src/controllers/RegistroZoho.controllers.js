@@ -237,3 +237,4 @@ const obtenerFechaHoraActual = () => {
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${timezone}`;
 };
 
+console.log('Ejecutando')
