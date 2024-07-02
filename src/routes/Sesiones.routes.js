@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { POSTSesion , PutSesion, PutPass , POSTFormulario, createProspecto, updatePaso1, updatePaso2, updatePaso3 } from '../controllers/Sesiones.controllers.js'
+import { POSTSesion , PutSesion, PutPass , POSTFormulario, createProspecto, updateProspectoPaso1, updateProspectoPaso2, updateProspectoPaso3 } from '../controllers/Sesiones.controllers.js'
 
 const router = Router()
 
@@ -14,10 +14,10 @@ router.post('/RegistroLinkedIn' , POSTFormulario)
 
 router.post('/prospecto', createProspecto);
 
-router.put('/prospecto/:id/paso1', updatePaso1);
+router.put('/prospecto/:id/paso1', updateProspectoPaso1);
 
-router.put('/prospecto/:id/paso2', updatePaso2);
+router.put('/prospecto/:id/paso2', updateProspectoPaso2);
 
-router.put('/prospecto/:id/paso3', updatePaso3);
+router.put('/prospecto/:id/paso3', updateProspectoPaso3);
 
 export default router
