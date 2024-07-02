@@ -164,3 +164,98 @@ const ObtenerResource = (Origen) =>{
     }
     return Resource
 }
+
+export const createProspecto = async (req, res) => {
+    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo } = req.body;
+    try {
+        const [rows] = await pool.query(
+            'INSERT INTO datos (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, paso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 0)', 
+            [marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo]
+        );
+        res.send({
+            message: "Registro Exitoso",
+            id: rows.insertId,
+            marca,
+            modelo,
+            submarca,
+            descripcion,
+            nombre,
+            apellido_paterno,
+            edad,
+            genero,
+            codigo_postal,
+            telefono,
+            correo
+        });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Algo está mal',
+            error: error.message
+        });
+    }
+};
+
+export const updatePaso1 = async (req, res) => {
+    const { id } = req.params;
+    const { aseguradora, precio_cotizacion, cevic } = req.body;
+    try {
+        const [result] = await pool.query(
+            'UPDATE datos SET aseguradora = ?, precio_cotizacion = ?, cevic = ?, paso = 1 WHERE id = ?', 
+            [aseguradora, precio_cotizacion, cevic, id]
+        );
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Prospecto no encontrado' });
+        }
+        res.send({ message: 'Paso 1 actualizado' });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Algo está mal',
+            error: error.message
+        });
+    }
+};
+
+export const updatePaso2 = async (req, res) => {
+    const { id } = req.params;
+    const { primer_nombre, segundo_nombre, apellido_paterno, apellido_materno, dia_nac, mes_nac, anio_nac, rfc, estado_residencia, municipio_residencia, colonia_residencia, calle_residencia, numero_ext_residencia, numero_int_residencia } = req.body;
+    try {
+        const [result] = await pool.query(
+            `UPDATE datos SET primer_nombre = ?, segundo_nombre = ?, apellido_paterno = ?, apellido_materno = ?, 
+            dia_nac = ?, mes_nac = ?, anio_nac = ?, rfc = ?, estado_residencia = ?, municipio_residencia = ?, 
+            colonia_residencia = ?, calle_residencia = ?, numero_ext_residencia = ?, numero_int_residencia = ?, paso = 2 
+            WHERE id = ?`, 
+            [primer_nombre, segundo_nombre, apellido_paterno, apellido_materno, dia_nac, mes_nac, anio_nac, rfc, 
+            estado_residencia, municipio_residencia, colonia_residencia, calle_residencia, numero_ext_residencia, 
+            numero_int_residencia, id]
+        );
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Prospecto no encontrado' });
+        }
+        res.send({ message: 'Paso 2 actualizado' });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Algo está mal',
+            error: error.message
+        });
+    }
+};
+
+export const updatePaso3 = async (req, res) => {
+    const { id } = req.params;
+    const { niv, no_motor, placa } = req.body;
+    try {
+        const [result] = await pool.query(
+            'UPDATE datos SET niv = ?, no_motor = ?, placa = ?, paso = 3 WHERE id = ?', 
+            [niv, no_motor, placa, id]
+        );
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Prospecto no encontrado' });
+        }
+        res.send({ message: 'Paso 3 actualizado' });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Algo está mal',
+            error: error.message
+        });
+    }
+};
