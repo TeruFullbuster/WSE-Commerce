@@ -190,11 +190,23 @@ export const createProspecto = async (req, res) => {
 // Paso 1: Actualizar con Datos del Paso 1
 export const updateProspectoPaso1 = async (req, res) => {
     const { id } = req.params;
-    const { aseguradora, precio_cotizacion, cevic } = req.body;
+    const { aseguradora, precio_cotizacion, cevic, leadidcpy } = req.body;
     const paso = 1;
 
     try {
-        const [result] = await pool.query('UPDATE Sesiones SET aseguradora = ?, precio_cotizacion = ?, cevic = ?, paso = ? WHERE id = ?', [aseguradora, precio_cotizacion, cevic, paso, id]);
+        let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?, cevic = ?, paso = ?';
+        const params = [aseguradora, precio_cotizacion, cevic, paso];
+
+        if (leadidcpy !== undefined) {
+            query += ', leadidcpy = ?';
+            params.push(leadidcpy);
+        }
+
+        query += ' WHERE id = ?';
+        params.push(id);
+
+        const [result] = await pool.query(query, params);
+
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
@@ -212,7 +224,7 @@ export const updateProspectoPaso2 = async (req, res) => {
     const paso = 2;
 
     try {
-        const [result] = await pool.query('UPDATE Sesiones SET primer_nombre = ?, segundo_nombre = ?, apellido_materno = ?, dia_nac = ?, mes_nac = ?, anio_nac = ?, rfc = ?, estado_residencia = ?, municipio_residencia = ?, colonia_residencia = ?, calle_residencia = ?, numero_ext_residencia = ?, numero_int_residencia = ?, paso = ? WHERE id = ?', [primer_nombre, segundo_nombre, apellido_paterno, apellido_materno, dia_nac, mes_nac, anio_nac, rfc, estado_residencia, municipio_residencia, colonia_residencia, calle_residencia, numero_ext_residencia, numero_int_residencia, paso, id]);
+        const [result] = await pool.query('UPDATE SesionesFantasma SET primer_nombre = ?, segundo_nombre = ?, apellido_materno = ?, dia_nac = ?, mes_nac = ?, anio_nac = ?, rfc = ?, estado_residencia = ?, municipio_residencia = ?, colonia_residencia = ?, calle_residencia = ?, numero_ext_residencia = ?, numero_int_residencia = ?, paso = ? WHERE id = ?', [primer_nombre, segundo_nombre, apellido_paterno, apellido_materno, dia_nac, mes_nac, anio_nac, rfc, estado_residencia, municipio_residencia, colonia_residencia, calle_residencia, numero_ext_residencia, numero_int_residencia, paso, id]);
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
@@ -228,9 +240,9 @@ export const updateProspectoPaso3 = async (req, res) => {
     const { id } = req.params;
     const { niv, no_motor, placa } = req.body;
     const paso = 3;
-
+    console.log(req.body);
     try {
-        const [result] = await pool.query('UPDATE Sesiones SET niv = ?, no_motor = ?, placa = ?, paso = ? WHERE id = ?', [niv, no_motor, placa, paso, id]);
+        const [result] = await pool.query('UPDATE SesionesFantasma SET niv = ?, no_motor = ?, placa = ?, paso = ? WHERE id = ?', [niv, no_motor, placa, paso, id]);
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
@@ -239,4 +251,20 @@ export const updateProspectoPaso3 = async (req, res) => {
             message: 'Algo está mal'
         });
     }
+};
+
+export const updateProspectoPaso4 = async (req, res) => {
+    const { id } = req.params;
+    const { leadidcpy } = req.body;
+    console.log(req.body);
+    try {
+        const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ?  WHERE id = ?', [leadidcpy, id]);
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+
+        res.json({ message: 'Prospecto actualizado exitosamente' });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Algo está mal'
+        });
+    }      
 };
