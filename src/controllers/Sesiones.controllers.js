@@ -166,33 +166,23 @@ const ObtenerResource = (Origen) =>{
 
 // Paso 0: Crear Prospecto Base
 export const createProspecto = async (req, res) => {
-    const { marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm } = req.body;
+    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
     console.log(req.body);
     try {
-        const [rows] = await pool.query('INSERT INTO SesionesFantasma (marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso]);
+        const [rows] = await pool.query('INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso]);
         res.send({
             message: "Registro Exitoso",
             id: rows.insertId,
             marca,
             modelo,
-            submarca,
-            nombre,
-            apellido_paterno,
-            edad,
-            genero,
-            codigo_postal,
-            telefono,
-            correo,
-            gclid,
-            utm,
-            fecha_creacion,
-            paso
+            submarca
         });
     } catch (error) {
         return res.status(500).json({
-            message: 'Algo está mal'
+            message: 'Algo está mal',
+            respuesta: error
         });
     }
 };
