@@ -1,4 +1,5 @@
 import { pool } from '../db.js'
+import fetch from 'node-fetch';
 
 export const POSTSesion  = async (req, res) => {
     const {URL,FechaDCreacion,IP,primaTotal} = req.body
@@ -253,18 +254,145 @@ export const updateProspectoPaso3 = async (req, res) => {
     }
 };
 
-export const updateProspectoPaso4 = async (req, res) => {
-    const { id } = req.params;
-    const { leadidcpy } = req.body;
-    console.log(req.body);
+// Paso 4: Actualizar Lead ID CPY
+export const updateProspectoPaso4 = async (id, leadidcpy) => {
+    console.log({ id, leadidcpy });
     try {
-        const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ?  WHERE id = ?', [leadidcpy, id]);
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+        const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ? WHERE id = ?', [leadidcpy, id]);
+        if (result.affectedRows === 0) return { message: 'Prospecto no encontrado' };
 
-        res.json({ message: 'Prospecto actualizado exitosamente' });
+        return { message: 'Prospecto actualizado exitosamente' };
     } catch (error) {
-        return res.status(500).json({
-            message: 'Algo está mal'
-        });
-    }      
+        return {
+            message: 'Algo está mal',
+            error
+        };
+    }
 };
+
+async function obtenerToken() {
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+
+    const raw = JSON.stringify({
+        "API_USUARIO": {
+            "USUARIO": "ADMIN",
+            "CONTRASENIA": "Hola123"
+        }
+    });
+
+    const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+    };
+
+    try {
+        const response = await fetch("https://wsservicios.gmag.com.mx/System/WsController/GenerarToken", requestOptions);
+        const result = await response.json();
+        console.log(result);
+        if (result && result.Token) {
+            return result.Token;
+        } else {
+            throw new Error("No se pudo obtener el token");
+        }
+    } catch (error) {
+        console.error('Error obteniendo el token:', error);
+        throw error;
+    }
+}
+
+// Fetch prospects without a specific field
+async function fetchProspects() {
+    console.log("Fetching prospects without specific field");
+    const [rows] = await pool.query('CALL FetchProspectsWithoutField()');
+    return rows[0];
+}
+
+async function postProspect(prospect, token) {
+    const myHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    };
+
+    const raw = JSON.stringify({
+        "ProspectoZoho": {
+            "email": prospect.correo,
+            "ramo": "AUTOMOVILES",
+            "zip_Code": prospect.codigo_postal,
+            "firstPage": "https://segurointeligente.mx/seguro-auto/",
+            "description": `El usuario selecciono un vehiculo con los siguiente datos Descripción: ${prospect.descripcion} Marca: ${prospect.marca} Modelo: ${prospect.modelo} EDAD: ${prospect.edad} Genero: ${prospect.genero} Y Codigo Postal: ${prospect.codigo_postal} Prima Total: ${prospect.precio_cotizacion}`,
+            "first_Name": prospect.nombre,
+            "Last_Name": prospect.apellido_paterno,
+            "full_Name": `${prospect.nombre} ${prospect.apellido_paterno}`,
+            "genero": prospect.genero,
+            "phone": "+521" + prospect.telefono,
+            "mobile": "+521" + prospect.telefono,
+            "lead_Source": "COMP-AUTO-GEN-SEO",
+            "aseguradora_Campana": "COMPARADOR",
+            "Marca": prospect.marca,
+            "Modelo": prospect.modelo,
+            "mkT_Campaigns": prospect.utm || "",
+            "GCLID": prospect.gclid || ""
+        }
+    });
+
+    const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+    };
+
+    try {
+        const response = await fetch("https://wsservicios.gmag.com.mx/ZoohoTools/CRM/CrearProspectosSI", requestOptions);
+        const result = await response.json();
+
+        if (result && result.data && result.data[0] && result.data[0].details && result.data[0].details.id) {
+            const newId = result.data[0].details.id;
+            const updateResult = await updateProspectoPaso4(prospect.id, newId);
+            return { success: true, result: updateResult };
+        }
+        return { success: true, result };
+    } catch (error) {
+        return { success: false, error };
+    }
+}
+
+
+export async function RecuperaProspectos(req, res) {
+    try {
+        const token = await obtenerToken();
+        const prospects = await fetchProspects();
+
+        if (prospects.length === 0) {
+            return res.json({ message: "No se encontraron registros" });
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        for (const prospect of prospects) {
+            const result = await postProspect(prospect, token);
+            if (result.success) {
+                successCount++;
+            } else {
+                errorCount++;
+                if (result.error.response && result.error.response.status === 401) {
+                    return res.status(401).json({ message: "No autorizado" });
+                }
+            }
+        }
+
+        res.json({
+            message: "Ejecución completada",
+            successCount,
+            errorCount
+        });
+    } catch (error) {
+        console.error('Error en RecuperaProspectos:', error);
+        res.status(500).json({ message: 'Error en la ejecución', error });
+    }
+}
+
