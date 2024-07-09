@@ -191,12 +191,12 @@ export const createProspecto = async (req, res) => {
 // Paso 1: Actualizar con Datos del Paso 1
 export const updateProspectoPaso1 = async (req, res) => {
     const { id } = req.params;
-    const { aseguradora, precio_cotizacion, cevic, leadidcpy } = req.body;
+    const { aseguradora, precio_cotizacion, cevic, leadidcpy, descripcion } = req.body;
     const paso = 1;
 
     try {
-        let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?, cevic = ?, paso = ?';
-        const params = [aseguradora, precio_cotizacion, cevic, paso];
+        let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?,  descripcion = ?, cevic = ?, paso = ?';
+        const params = [aseguradora, precio_cotizacion, descripcion, cevic, paso];
 
         if (leadidcpy !== undefined) {
             query += ', leadidcpy = ?';
