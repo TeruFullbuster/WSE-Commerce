@@ -167,12 +167,12 @@ const ObtenerResource = (Origen) =>{
 
 // Paso 0: Crear Prospecto Base
 export const createProspecto = async (req, res) => {
-    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm } = req.body;
+    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
     console.log(req.body);
     try {
-        const [rows] = await pool.query('INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso]);
+        const [rows] = await pool.query('INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource]);
         res.send({
             message: "Registro Exitoso",
             id: rows.insertId,
@@ -329,7 +329,7 @@ async function postProspect(prospect, token) {
             "genero": prospect.genero,
             "phone": "+521" + prospect.telefono,
             "mobile": "+521" + prospect.telefono,
-            "lead_Source": "COMP-AUTO-GEN-SEO",
+            "lead_Source": prospect.leadsource,
             "aseguradora_Campana": "COMPARADOR",
             "Marca": prospect.marca,
             "Modelo": prospect.modelo,
