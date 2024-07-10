@@ -191,12 +191,12 @@ export const createProspecto = async (req, res) => {
 // Paso 1: Actualizar con Datos del Paso 1
 export const updateProspectoPaso1 = async (req, res) => {
     const { id } = req.params;
-    const { aseguradora, precio_cotizacion, cevic, leadidcpy, descripcion } = req.body;
+    const { aseguradora, precio_cotizacion, cevic, leadidcpy, descripcion, aseguradoracampana } = req.body;
     const paso = 1;
 
     try {
-        let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?,  descripcion = ?, cevic = ?, paso = ?';
-        const params = [aseguradora, precio_cotizacion, descripcion, cevic, paso];
+        let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?,  descripcion = ?, cevic = ?, paso = ?, aseguradoracampana = ?';
+        const params = [aseguradora, precio_cotizacion, descripcion, cevic, paso, aseguradoracampana];
 
         if (leadidcpy !== undefined) {
             query += ', leadidcpy = ?';
@@ -311,6 +311,7 @@ async function fetchProspects() {
 }
 
 async function postProspect(prospect, token) {
+    console.log(token)
     const myHeaders = {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
@@ -330,14 +331,14 @@ async function postProspect(prospect, token) {
             "phone": "+521" + prospect.telefono,
             "mobile": "+521" + prospect.telefono,
             "lead_Source": prospect.leadsource,
-            "aseguradora_Campana": "COMPARADOR",
+            "aseguradora_Campana": prospect.aseguradoracampana || "COMPARADOR",
             "Marca": prospect.marca,
             "Modelo": prospect.modelo,
             "mkT_Campaigns": prospect.utm || "",
             "GCLID": prospect.gclid || ""
         }
     });
-
+    console.log(raw)
     const requestOptions = {
         method: "POST",
         headers: myHeaders,
@@ -348,7 +349,7 @@ async function postProspect(prospect, token) {
     try {
         const response = await fetch("https://wsservicios.gmag.com.mx/ZoohoTools/CRM/CrearProspectosSI", requestOptions);
         const result = await response.json();
-
+        console.log(result);
         if (result && result.data && result.data[0] && result.data[0].details && result.data[0].details.id) {
             const newId = result.data[0].details.id;
             const updateResult = await updateProspectoPaso4(prospect.id, newId);
