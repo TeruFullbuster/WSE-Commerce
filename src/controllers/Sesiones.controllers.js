@@ -165,14 +165,34 @@ const ObtenerResource = (Origen) =>{
     return Resource
 }
 
-// Paso 0: Crear Prospecto Base
 export const createProspecto = async (req, res) => {
-    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource } = req.body;
+    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource, aseguradoraCampana } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
     console.log(req.body);
     try {
-        const [rows] = await pool.query('INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)', [marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource]);
+        const [rows] = await pool.query(
+            'INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            [
+                marca, 
+                modelo, 
+                submarca, 
+                descripcion, 
+                nombre, 
+                apellido_paterno, 
+                edad, 
+                genero, 
+                codigo_postal, 
+                telefono, 
+                correo, 
+                gclid, 
+                utm, 
+                fecha_creacion, 
+                paso, 
+                leadsource, 
+                aseguradoraCampana || ''  // Asigna una cadena vacía si aseguradoraCampana es undefined
+            ]
+        );
         res.send({
             message: "Registro Exitoso",
             id: rows.insertId,
