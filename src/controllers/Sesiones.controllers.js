@@ -323,7 +323,7 @@ async function postProspect(prospect, token) {
             "ramo": "AUTOMOVILES",
             "zip_Code": prospect.codigo_postal,
             "firstPage": "https://segurointeligente.mx/seguro-auto/",
-            "description": `El usuario selecciono un vehiculo con los siguiente datos Descripción: ${prospect.descripcion} Marca: ${prospect.marca} Modelo: ${prospect.modelo} EDAD: ${prospect.edad} Genero: ${prospect.genero} Y Codigo Postal: ${prospect.codigo_postal} Prima Total: ${prospect.precio_cotizacion}`,
+            "description": `El usuario selecciono un vehiculo con los siguiente datos Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} EDAD: ${calcularEdad(prospect.edad)} Genero: ${prospect.genero} Y Codigo Postal: ${prospect.codigo_postal} Prima Total: ${prospect.precio_cotizacion}`,
             "first_Name": prospect.nombre,
             "Last_Name": prospect.apellido_paterno,
             "full_Name": `${prospect.nombre} ${prospect.apellido_paterno}`,
@@ -397,3 +397,21 @@ export async function RecuperaProspectos(req, res) {
     }
 }
 
+function calcularEdad(fechaNacimiento) {
+    // Crear un objeto Date a partir de la fecha de nacimiento
+    const fechaNac = new Date(fechaNacimiento);
+    
+    // Obtener la fecha actual
+    const hoy = new Date();
+    
+    // Calcular la diferencia en años
+    let edad = hoy.getFullYear() - fechaNac.getFullYear();
+    
+    // Ajustar la edad si el cumpleaños no ha ocurrido este año
+    const mes = hoy.getMonth() - fechaNac.getMonth();
+    if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNac.getDate())) {
+        edad--;
+    }
+    
+    return edad;
+}
