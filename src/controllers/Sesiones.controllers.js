@@ -394,6 +394,9 @@ export async function RecuperaProspectos(req, res) {
         let successCount = 0;
         let errorCount = 0;
 
+        // Función para agregar un delay
+        const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
         for (const prospect of prospects) {
             const result = await postProspect(prospect, token);
             if (result.success) {
@@ -404,6 +407,8 @@ export async function RecuperaProspectos(req, res) {
                     return res.status(401).json({ message: "No autorizado" });
                 }
             }
+            // Agregar un delay de 10 segundos entre cada iteración
+            await delay(50000);
         }
 
         res.json({

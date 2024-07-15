@@ -5,6 +5,7 @@ import MailingRoutes from './routes/Mailing.routes.js'
 import AXAKeraltyRoutes from './routes/axakeralty.routes.js'
 import RegistroZoho from './routes/RegistroZoho.routes.js'
 import Generico from './routes/generico.routes.js'
+import Control from './routes/Control.routes.js'
 import http from 'http'
 
 import cors from 'cors'
@@ -44,5 +45,7 @@ app.use(AXAKeraltyRoutes)
 app.use(RegistroZoho)
 
 app.use(Generico)
+
+app.use(Control)
 
 export default app;
