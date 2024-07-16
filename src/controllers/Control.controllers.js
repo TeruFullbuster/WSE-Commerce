@@ -103,7 +103,7 @@ const transporter = nodemailer.createTransport({
 // Función para enviar correo
 const enviarCorreo = async (cuerpo, emailList, allValid) => {
     const currentTimeCDMX = moment().tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss');
-    const subject = allValid ? 'Todas las URLs son válidas' : 'Enlaces no válidos en el sitemap';
+    const subject = allValid ? 'Analisis del sitio de SI: Todas las URLs son válidas' : 'Analisis del sitio de SI: Enlaces no válidos en el sitemap';
 
     try {
         // Configura el contenido del correo
