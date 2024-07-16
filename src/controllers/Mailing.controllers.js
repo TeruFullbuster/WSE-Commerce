@@ -51,6 +51,3 @@ const enviarCorreo = async (destinatario, cc, asunto, cuerpo) => {
         console.error('Error al enviar el correo:', error);
     }
 };
-
-// Ejemplo de uso
-
