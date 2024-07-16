@@ -25,6 +25,7 @@ export const LogPMP = async (req, res) => {
 // Función para validar URLs
 const validateUrls = async (urls, emailList) => {
     let invalidUrls = [];
+    let totalUrls = urls.length;
 
     for (let url of urls) {
         try {
@@ -42,10 +43,10 @@ const validateUrls = async (urls, emailList) => {
     }
 
     if (invalidUrls.length > 0) {
-        var cuerpo = "Las siguientes URLs no son válidas:\n" + invalidUrls.join('\n');
+        var cuerpo = `Se escanearon un total de ${totalUrls} URLs. Las siguientes ${invalidUrls.length} URLs no son válidas:\n` + invalidUrls.join('\n');
         await enviarCorreo(cuerpo, emailList, false);
     } else {
-        var cuerpo = `Todas las URLs del sitio se encuentran activas. Vuelva pronto.`;
+        var cuerpo = `Se escanearon un total de ${totalUrls} URLs. Todas las URLs del sitio se encuentran activas. Vuelva pronto.`;
         await enviarCorreo(cuerpo, emailList, true);
     }
 };
