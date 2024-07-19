@@ -408,7 +408,7 @@ export async function RecuperaProspectos(req, res) {
                 }
             }
             // Agregar un delay de 10 segundos entre cada iteración
-            await delay(10000);
+            await delay(5000);
         }
 
         res.json({
