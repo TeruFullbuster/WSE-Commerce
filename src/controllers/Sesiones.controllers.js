@@ -242,11 +242,11 @@ export const updateProspectoPaso1 = async (req, res) => {
 // Paso 2: Actualizar con Datos del Paso 2
 export const updateProspectoEcommerce = async (req, res) => {
     const { id } = req.params; 
-    const { leadsource } = req.body;
+    const { leadsource, aseguradora, aseguradoracampana, descripcion, cvic  } = req.body;
     const paso = 2;
 
     try {
-        const [result] = await pool.query('UPDATE SesionesFantasma SET leadsource = ? WHERE id = ?', [leadsource, id]);
+        const [result] = await pool.query('UPDATE SesionesFantasma SET leadsource = ?, aseguradora = ?, descripcion = ?, cevic = ?, paso = ?, aseguradoracampana = ? WHERE id = ?', [leadsource, aseguradora, descripcion, cvic, paso, aseguradoracampana, id]);
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
@@ -294,8 +294,9 @@ export const updateProspectoPaso3 = async (req, res) => {
 };
 
 // Paso 4: Actualizar Lead ID CPY
-export const updateProspectoPaso4 = async (id, leadidcpy) => {
-    console.log({ id, leadidcpy });
+export const updateProspectoPaso4 = async (req, res) => {
+    const { id } = req.params;
+    const { leadidcpy } = req.body;
     try {
         const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ? WHERE id = ?', [leadidcpy, id]);
         if (result.affectedRows === 0) return { message: 'Prospecto no encontrado' };
