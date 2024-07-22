@@ -166,13 +166,13 @@ const ObtenerResource = (Origen) =>{
 }
 
 export const createProspecto = async (req, res) => {
-    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource, aseguradoraCampana } = req.body;
+    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource, aseguradoraCampana, firstPage } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
     console.log(req.body);
     try {
         const [rows] = await pool.query(
-            'INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana, firstPage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 marca, 
                 modelo, 
@@ -181,7 +181,7 @@ export const createProspecto = async (req, res) => {
                 nombre, 
                 apellido_paterno, 
                 edad, 
-                genero, 
+                genero,
                 codigo_postal, 
                 telefono, 
                 correo, 
@@ -190,7 +190,8 @@ export const createProspecto = async (req, res) => {
                 fecha_creacion, 
                 paso, 
                 leadsource, 
-                aseguradoraCampana || ''  // Asigna una cadena vacía si aseguradoraCampana es undefined
+                aseguradoraCampana || '',  // Asigna una cadena vacía si aseguradoraCampana es undefined
+                firstPage
             ]
         );
         res.send({
