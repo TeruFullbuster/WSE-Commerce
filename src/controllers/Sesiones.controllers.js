@@ -239,6 +239,24 @@ export const updateProspectoPaso1 = async (req, res) => {
 };
 
 // Paso 2: Actualizar con Datos del Paso 2
+export const updateProspectoEcommerce = async (req, res) => {
+    const { id } = req.params; 
+    const { leadsource } = req.body;
+    const paso = 2;
+
+    try {
+        const [result] = await pool.query('UPDATE SesionesFantasma SET leadsource = ? WHERE id = ?', [leadsource, id]);
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+
+        res.json({ message: 'Prospecto actualizado exitosamente' });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Algo está mal'
+        });
+    }
+};
+
+// Paso 2: Actualizar con Datos del Paso 2
 export const updateProspectoPaso2 = async (req, res) => {
     const { id } = req.params;
     const { primer_nombre, segundo_nombre, apellido_paterno, apellido_materno, dia_nac, mes_nac, anio_nac, rfc, estado_residencia, municipio_residencia, colonia_residencia, calle_residencia, numero_ext_residencia, numero_int_residencia } = req.body;
