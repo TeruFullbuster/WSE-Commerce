@@ -310,6 +310,21 @@ export const updateProspectoPaso4 = async (req, res) => {
     }
 };
 
+
+export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
+    try {
+        const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ? WHERE id = ?', [leadidcpy, id]);
+        if (result.affectedRows === 0) return { message: 'Prospecto no encontrado' };
+
+        return { message: 'Prospecto actualizado exitosamente' };
+    } catch (error) {
+        return {
+            message: 'Algo está mal',
+            error
+        };
+    }
+};
+
 async function obtenerToken() {
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
@@ -392,7 +407,7 @@ async function postProspect(prospect, token) {
         console.log(result);
         if (result && result.data && result.data[0] && result.data[0].details && result.data[0].details.id) {
             const newId = result.data[0].details.id;
-            const updateResult = await updateProspectoPaso4(prospect.id, newId);
+            const updateResult = await ActualizaLeadIDCPY(prospect.id, newId);
             return { success: true, result: updateResult };
         }
         return { success: true, result };
