@@ -371,13 +371,13 @@ async function postProspect(prospect, token) {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
     };
-
+    console.log(prospect);
     const raw = JSON.stringify({
         "ProspectoZoho": {
             "email": prospect.correo,
             "ramo": "AUTOMOVILES",
             "zip_Code": prospect.codigo_postal,
-            "firstPage": "https://segurointeligente.mx/seguro-auto/",
+            "firstPage": prospect.firstPage,
             "description": `El usuario selecciono un vehiculo con los siguiente datos Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} EDAD: ${calcularEdad(prospect.edad)} Genero: ${prospect.genero === 0 ? 'Masculino' : 'Femenino'} Y Codigo Postal: ${prospect.codigo_postal} Prima Total: ${prospect.precio_cotizacion}`,
             "first_Name": prospect.nombre,
             "Last_Name": prospect.apellido_paterno,
