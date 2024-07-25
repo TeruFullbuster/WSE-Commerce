@@ -4,6 +4,8 @@ import fetch from 'node-fetch';
 
 import axios from 'axios';
 
+import moment from 'moment-timezone';
+
 export const TokenCondusef = async (req, res) => {
     const { users, pass } = req.query;
 
@@ -54,3 +56,67 @@ const obtenerFechaHoraActual = () => {
     return `${year}-${month}-${day}T${hours}:${minutes}:${seconds}${timezone}`;
 };
 
+export const createImageEntry = async (req, res) => {
+    const { base64String, ip } = req.body;
+    const date = moment().tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss');
+
+    try {
+        // Extrae la parte base64 del string recibido
+        const base64Image = base64String.replace(/^data:image\/png;base64,/, ''); // Ajusta según el tipo de imagen
+        
+        const [result] = await pool.query(
+            'INSERT INTO Imagenes (fecha, imagen, ip) VALUES (?, ?, ?)',
+            [date, base64Image, ip]
+        );
+
+        res.status(201).json({
+            message: 'Imagen guardada con éxito',
+            id: result.insertId
+        });
+    } catch (error) {
+        console.error('Error al guardar la imagen:', error);
+        res.status(500).json({ message: 'Error interno del servidor', error });
+    }
+};
+
+export const getImageEntry = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await pool.query('SELECT imagen FROM Imagenes WHERE id = ?', [id]);
+        if (rows.length > 0) {
+            const base64Image = rows[0].imagen;
+
+            // Añade el prefijo adecuado para la imagen en base64
+            const dataUri = `data:image/png;base64,${base64Image}`; // Cambia según el tipo de imagen
+
+            res.status(200).json({
+                base64: dataUris
+            });
+        } else {
+            res.status(404).send('Imagen no encontrada');
+        }
+    } catch (error) {
+        console.error('Error al recuperar la imagen:', error);
+        res.status(500).json({ message: 'Error interno del servidor', error });
+    }
+};
+
+export const getImageEntryAsBase64 = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const [rows] = await pool.query('SELECT imagen FROM Imagenes WHERE id = ?', [id]);
+        if (rows.length > 0) {
+            const base64Image = rows[0].imagen;
+            
+            // Devuelve la imagen como base64
+            res.json({
+                base64: base64Image
+            });
+        } else {
+            res.status(404).send('Imagen no encontrada');
+        }
+    } catch (error) {
+        console.error('Error al recuperar la imagen:', error);
+        res.status(500).json({ message: 'Error interno del servidor', error });
+    }
+};

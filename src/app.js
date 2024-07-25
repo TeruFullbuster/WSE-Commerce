@@ -1,51 +1,43 @@
-import express from 'express'
+import express from 'express';
+import SesionesRoutes from './routes/Sesiones.routes.js';
+import MailingRoutes from './routes/Mailing.routes.js';
+import AXAKeraltyRoutes from './routes/axakeralty.routes.js';
+import RegistroZoho from './routes/RegistroZoho.routes.js';
+import Generico from './routes/generico.routes.js';
+import Control from './routes/Control.routes.js';
+import cors from 'cors';
+import chicle from 'crypto';
 
-import SesionesRoutes from './routes/Sesiones.routes.js'
-import MailingRoutes from './routes/Mailing.routes.js'
-import AXAKeraltyRoutes from './routes/axakeralty.routes.js'
-import RegistroZoho from './routes/RegistroZoho.routes.js'
-import Generico from './routes/generico.routes.js'
-import Control from './routes/Control.routes.js'
-import http from 'http'
+const app = express();
+const PORT = 3000;
 
-import cors from 'cors'
-import chicle from 'crypto'
-
-chicle.randomBytes(16).toString( 'base64' );
-
-console.log(chicle.randomBytes(16).toString( 'base64' ));
-//  '6JDFIvPbrWANKpSJ8vlv6b=='
-
+chicle.randomBytes(16).toString('base64');
+console.log(chicle.randomBytes(16).toString('base64'));
+// '6JDFIvPbrWANKpSJ8vlv6b=='
 console.log("Algo");
 
-const app = express()
-const server = http.createServer((req, res) => {
-    // Obtiene la dirección IP del cliente
-    const clientIp = req.connection.remoteAddress;
-  
-    res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end(`La dirección IP del cliente es: ${clientIp}`);
-  });
-
-const PORT = 3000;
-server.listen(PORT, () => {
-  console.log(`Servidor escuchando en http://localhost:${PORT}`);
+// Middleware para obtener la dirección IP del cliente
+app.use((req, res, next) => {
+    req.clientIp = req.connection.remoteAddress;
+    next();
 });
 
-app.use(cors())
+app.use(cors());
 
-app.use(express.json())
+// Configuración para aumentar el límite de tamaño de carga
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
-app.use(SesionesRoutes)
+app.use(SesionesRoutes);
+app.use(MailingRoutes);
+app.use(AXAKeraltyRoutes);
+app.use(RegistroZoho);
+app.use(Generico);
+app.use(Control);
 
-app.use(MailingRoutes)
-
-app.use(AXAKeraltyRoutes)
-
-app.use(RegistroZoho)
-
-app.use(Generico)
-
-app.use(Control)
+// Configuración del servidor para escuchar en el puerto
+app.listen(PORT, () => {
+  console.log(`Servidor escuchando en http://localhost:${PORT}`);
+});
 
 export default app;
