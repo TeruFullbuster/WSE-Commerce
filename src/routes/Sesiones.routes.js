@@ -1,6 +1,8 @@
 import { Router } from "express";
 
-import { updateProspectoEcommerce, POSTSesion , PutSesion, PutPass , POSTFormulario, createProspecto, updateProspectoPaso1, updateProspectoPaso2, updateProspectoPaso3, updateProspectoPaso4, RecuperaProspectos } from '../controllers/Sesiones.controllers.js'
+import { updateProspectoEcommerce, POSTSesion , PutSesion, PutPass , 
+    POSTFormulario, createProspecto, updateProspectoPaso1, updateProspectoPaso2, 
+    updateProspectoPaso3, updateProspectoPaso4, RecuperaProspectos, TraemelosEcommerce } from '../controllers/Sesiones.controllers.js'
 
 const router = Router()
 
@@ -25,5 +27,7 @@ router.put('/prospecto/:id/paso4', updateProspectoPaso4);
 router.get('/RecuperaProspectos', RecuperaProspectos);
 
 router.put('/prospecto/:id/Ecommerce', updateProspectoEcommerce);
+
+router.get('/TraemelosEcommerce', TraemelosEcommerce);
 
 export default router

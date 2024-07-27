@@ -6,6 +6,10 @@ import axios from 'axios';
 
 import moment from 'moment-timezone';
 
+import archiver from 'archiver';
+
+import sharp from 'sharp';
+
 export const TokenCondusef = async (req, res) => {
     const { users, pass } = req.query;
 
@@ -90,7 +94,7 @@ export const getImageEntry = async (req, res) => {
             const dataUri = `data:image/png;base64,${base64Image}`; // Cambia según el tipo de imagen
 
             res.status(200).json({
-                base64: dataUris
+                base64: dataUri
             });
         } else {
             res.status(404).send('Imagen no encontrada');
@@ -101,22 +105,40 @@ export const getImageEntry = async (req, res) => {
     }
 };
 
-export const getImageEntryAsBase64 = async (req, res) => {
-    const { id } = req.params;
+
+
+export const getImagesAsZip = async (req, res) => {
     try {
-        const [rows] = await pool.query('SELECT imagen FROM Imagenes WHERE id = ?', [id]);
+        const [rows] = await pool.query('SELECT id, imagen FROM Imagenes');
         if (rows.length > 0) {
-            const base64Image = rows[0].imagen;
-            
-            // Devuelve la imagen como base64
-            res.json({
-                base64: base64Image
+            const archive = archiver('zip', {
+                zlib: { level: 9 } // Nivel de compresión
             });
+
+            // Configura la respuesta HTTP para la descarga del archivo ZIP
+            res.attachment('images.zip');
+            archive.pipe(res);
+
+            for (const row of rows) {
+                try {
+                    const base64Image = row.imagen;
+                    const imageBuffer = Buffer.from(base64Image, 'base64');
+
+                    // Asegura que la imagen sea PNG utilizando sharp
+                    const pngBuffer = await sharp(imageBuffer).png().toBuffer();
+                    archive.append(pngBuffer, { name: `image_${row.id}.png` });
+                } catch (imageError) {
+                    console.error(`Error procesando la imagen con id ${row.id}:`, imageError);
+                    // Omite esta imagen y continúa con las demás
+                }
+            }
+
+            await archive.finalize();
         } else {
-            res.status(404).send('Imagen no encontrada');
+            res.status(404).send('No se encontraron imágenes');
         }
     } catch (error) {
-        console.error('Error al recuperar la imagen:', error);
+        console.error('Error al recuperar las imágenes:', error);
         res.status(500).json({ message: 'Error interno del servidor', error });
     }
 };

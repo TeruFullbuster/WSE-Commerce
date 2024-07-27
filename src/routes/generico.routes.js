@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { TokenCondusef,createImageEntry, getImageEntry, getImageEntryAsBase64  } from '../controllers/generico.controllers.js'
+import { TokenCondusef,createImageEntry, getImageEntry, getImagesAsZip  } from '../controllers/generico.controllers.js'
 
 const router = Router()
 
@@ -10,6 +10,6 @@ router.post('/createImageEntry/', createImageEntry);
 
 router.get('/getImageEntry/:id' , getImageEntry)
 
-router.get('/getImageBASE/:id' , getImageEntryAsBase64)
+router.get('/getImagesAsZip/' , getImagesAsZip)
 
 export default router

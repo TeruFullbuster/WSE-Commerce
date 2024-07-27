@@ -214,7 +214,7 @@ export const updateProspectoPaso1 = async (req, res) => {
     const { id } = req.params;
     const { aseguradora, precio_cotizacion, cevic, leadidcpy, descripcion, aseguradoracampana } = req.body;
     const paso = 1;
-
+    console.log(req.body);
     try {
         let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?,  descripcion = ?, cevic = ?, paso = ?, aseguradoracampana = ?';
         const params = [aseguradora, precio_cotizacion, descripcion, cevic, paso, aseguradoracampana];
@@ -474,4 +474,20 @@ function calcularEdad(fechaNacimiento) {
     }
     
     return edad;
+}
+
+export const TraemelosEcommerce = async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT id, marca,modelo, submarca, descripcion, aseguradoracampana,firstPage, leadsource, cevic, nombre, apellido_paterno, edad, genero, codigo_postal, utm, gclid, paso, leadidCPY FROM SesionesFantasma WHERE LeadidCPY = 555');
+        if (rows.length > 0) {
+            res.status(200).json({
+                rows
+            });
+        } else {
+            res.status(404).send('Sin prospectos en Cola');
+        }
+    } catch (error) {
+        console.error('Error al recuperar la imagen:', error);
+        res.status(500).json({ message: 'Error interno del servidor', error });
+    }
 }
