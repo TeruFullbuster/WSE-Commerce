@@ -8,8 +8,6 @@ import moment from 'moment-timezone';
 
 import archiver from 'archiver';
 
-import sharp from 'sharp';
-
 export const TokenCondusef = async (req, res) => {
     const { users, pass } = req.query;
 
@@ -108,7 +106,7 @@ export const getImageEntry = async (req, res) => {
 
 
 export const getImagesAsZip = async (req, res) => {
-    try {
+    /* try {
         const [rows] = await pool.query('SELECT id, imagen FROM Imagenes');
         if (rows.length > 0) {
             const archive = archiver('zip', {
@@ -140,5 +138,5 @@ export const getImagesAsZip = async (req, res) => {
     } catch (error) {
         console.error('Error al recuperar las imágenes:', error);
         res.status(500).json({ message: 'Error interno del servidor', error });
-    }
+    } */
 };
