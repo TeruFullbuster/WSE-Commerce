@@ -364,6 +364,12 @@ async function fetchProspects() {
     const [rows] = await pool.query('CALL FetchProspectsWithoutField()');
     return rows[0];
 }
+// Fetch prospects without a specific field
+async function fetchProspectsEcommerce() {
+    console.log("Fetching prospects without specific field");
+    const [rows] = await pool.query('CALL FetchProspectsWithoutFieldEcommerce()');
+    return rows[0];
+}
 
 async function postProspect(prospect, token) {
     console.log(token)
@@ -489,5 +495,45 @@ export const TraemelosEcommerce = async (req, res) => {
     } catch (error) {
         console.error('Error al recuperar la imagen:', error);
         res.status(500).json({ message: 'Error interno del servidor', error });
+    }
+}
+
+export async function RecuperaProspectosEcommerce(req, res) {
+    try {
+        const token = await obtenerToken();
+        const prospects = await fetchProspectsEcommerce();
+
+        if (prospects.length === 0) {
+            return res.json({ message: "No se encontraron registros" });
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        // Función para agregar un delay
+        const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+        for (const prospect of prospects) {
+            const result = await postProspect(prospect, token);
+            if (result.success) {
+                successCount++;
+            } else {
+                errorCount++;
+                if (result.error.response && result.error.response.status === 401) {
+                    return res.status(401).json({ message: "No autorizado" });
+                }
+            }
+            // Agregar un delay de 10 segundos entre cada iteración
+            await delay(5000);
+        }
+
+        res.json({
+            message: "Ejecución completada",
+            successCount,
+            errorCount
+        });
+    } catch (error) {
+        console.error('Error en RecuperaProspectos:', error);
+        res.status(500).json({ message: 'Error en la ejecución', error });
     }
 }
