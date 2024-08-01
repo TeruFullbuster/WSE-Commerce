@@ -395,8 +395,8 @@ async function postProspect(prospect, token) {
             "aseguradora_Campana": prospect.aseguradoracampana || "COMPARADOR",
             "Marca": prospect.marca,
             "Modelo": prospect.modelo,
-            "mkT_Campaigns": prospect.utm || "",
-            "GCLID": prospect.gclid || ""
+            "mkT_Campaigns": prospect.utm && prospect.utm !== "N/A" ? prospect.utm : "",
+            "GCLID": prospect.gclid && prospect.gclid !== "N/A" ? prospect.gclid : ""
         }
     });
     console.log(raw)
