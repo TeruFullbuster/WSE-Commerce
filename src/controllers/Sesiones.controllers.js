@@ -199,7 +199,8 @@ export const createProspecto = async (req, res) => {
             id: rows.insertId,
             marca,
             modelo,
-            submarca
+            submarca,
+            aseguradoracampana: rows.aseguradoracampana
         });
     } catch (error) {
         return res.status(500).json({
@@ -216,10 +217,14 @@ export const updateProspectoPaso1 = async (req, res) => {
     const paso = 1;
     console.log(req.body);
     try {
-        let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?,  descripcion = ?, cevic = ?, paso = ?, aseguradoracampana = ?';
-        const params = [aseguradora, precio_cotizacion, descripcion, cevic, paso, aseguradoracampana];
+        let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?,  descripcion = ?, cevic = ?, paso = ?';
+        const params = [aseguradora, precio_cotizacion, descripcion, cevic, paso];
 
-        if (leadidcpy !== undefined) {
+        if (aseguradoracampana !== undefined) {
+            query += ', aseguradoracampana = ?';
+            params.push(aseguradoracampana);
+        }
+        if (leadidcpy !== undefined && leadidcpy !== '') {
             query += ', leadidcpy = ?';
             params.push(leadidcpy);
         }
