@@ -172,7 +172,7 @@ export const createProspecto = async (req, res) => {
     console.log(req.body);
     try {
         const [rows] = await pool.query(
-            'INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana, firstPage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoracampana, firstPage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
             [
                 marca, 
                 modelo, 
