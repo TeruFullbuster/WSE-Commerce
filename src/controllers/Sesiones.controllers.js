@@ -213,7 +213,7 @@ export const createProspecto = async (req, res) => {
 // Paso 1: Actualizar con Datos del Paso 1
 export const updateProspectoPaso1 = async (req, res) => {
     const { id } = req.params;
-    const { aseguradora, precio_cotizacion, cevic, leadidcpy, descripcion, aseguradoracampana } = req.body;
+    const { aseguradora, precio_cotizacion, cevic, leadidcpy, descripcion, aseguradoracampana, leadsource } = req.body;
     const paso = 1;
     console.log(req.body);
     try {
@@ -228,7 +228,10 @@ export const updateProspectoPaso1 = async (req, res) => {
             query += ', leadidcpy = ?';
             params.push(leadidcpy);
         }
-
+        if(leadsource !== undefined){
+            query += ', leadsource = ?';
+            params.push(leadsource);
+        }
         query += ' WHERE id = ?';
         params.push(id);
 
