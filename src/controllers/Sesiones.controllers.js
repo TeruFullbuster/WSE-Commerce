@@ -251,16 +251,45 @@ export const updateProspectoEcommerce = async (req, res) => {
     const paso = 2;
 
     try {
-        const [result] = await pool.query('UPDATE SesionesFantasma SET leadsource = ?, aseguradora = ?, descripcion = ?, cevic = ?, paso = ?, aseguradoracampana = ? WHERE id = ?', [leadsource, aseguradora, descripcion, cvic, paso, aseguradoracampana, id]);
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+        let query = 'UPDATE SesionesFantasma SET paso = ?';
+        const params = [paso];
+
+        if (leadsource !== undefined) {
+            query += ', leadsource = ?';
+            params.push(leadsource);
+        }
+        if (aseguradora !== undefined) {
+            query += ', aseguradora = ?';
+            params.push(aseguradora);
+        }
+        if (descripcion !== undefined) {
+            query += ', descripcion = ?';
+            params.push(descripcion);
+        }
+        if (cvic !== undefined) {
+            query += ', cvic = ?';
+            params.push(cvic);
+        }
+        if (aseguradoracampana !== undefined) {
+            query += ', aseguradoracampana = ?';
+            params.push(aseguradoracampana);
+        }
+
+        query += ' WHERE id = ?';
+        params.push(id);
+
+        const [result] = await pool.query(query, params);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Prospecto no encontrado' });
+        }
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
-        return res.status(500).json({
-            message: 'Algo está mal'
-        });
+        return res.status(500).json({ message: 'Algo está mal' });
     }
 };
+
 
 // Paso 2: Actualizar con Datos del Paso 2
 export const updateProspectoPaso2 = async (req, res) => {
