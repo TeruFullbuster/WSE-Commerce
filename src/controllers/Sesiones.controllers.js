@@ -347,7 +347,6 @@ export const updateProspectoPaso4 = async (req, res) => {
     }
 };
 
-
 export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
     try {
         const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ? WHERE id = ?', [leadidcpy, id]);
@@ -451,14 +450,13 @@ async function postProspect(prospect, token) {
         if (result && result.data && result.data[0] && result.data[0].details && result.data[0].details.id) {
             const newId = result.data[0].details.id;
             const updateResult = await ActualizaLeadIDCPY(prospect.id, newId);
-            return { success: true, result: updateResult };
+            return { success: true, result: updateResult, respuesta: result };
         }
-        return { success: true, result };
+        return { success: true, result, respuesta: result };
     } catch (error) {
-        return { success: false, error };
+        return { success: false, error, respuesta: error };
     }
 }
-
 
 export async function RecuperaProspectos(req, res) {
     try {
@@ -474,26 +472,31 @@ export async function RecuperaProspectos(req, res) {
 
         // Función para agregar un delay
         const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
+        const respuesta = await LogsWS("RecuperaProspectos", "WS")
+        console.log(respuesta.id)
         for (const prospect of prospects) {
             const result = await postProspect(prospect, token);
-            if (result.success) {
+            console.log(result.respuesta.data[0].status)
+
+            if (result.success && result.respuesta.data[0].status != "error") {
                 successCount++;
             } else {
                 errorCount++;
-                if (result.error.response && result.error.response.status === 401) {
+                if (result.error?.response && result.error.response.status === 401) {
                     return res.status(401).json({ message: "No autorizado" });
                 }
             }
             // Agregar un delay de 10 segundos entre cada iteración
             await delay(5000);
         }
-
+        const Logs = await ActualizaLogsWS(respuesta.id, successCount, errorCount)
         res.json({
             message: "Ejecución completada",
             successCount,
-            errorCount
+            errorCount,
+            Logs
         });
+        
     } catch (error) {
         console.error('Error en RecuperaProspectos:', error);
         res.status(500).json({ message: 'Error en la ejecución', error });
@@ -572,5 +575,67 @@ export async function RecuperaProspectosEcommerce(req, res) {
     } catch (error) {
         console.error('Error en RecuperaProspectos:', error);
         res.status(500).json({ message: 'Error en la ejecución', error });
+    }
+}
+
+export const LogsWS = async (servicio, origen) => {
+    console.log(servicio, origen);
+
+    try {
+        // Obtener la fecha y hora actual del servidor en UTC
+        const serverDate = new Date();
+
+        // Definir la diferencia horaria de México respecto a UTC
+        const mexicoOffset = -6; // UTC-6 durante horario estándar
+
+        // Determinar si actualmente es horario de verano en México
+        const isDST = (date) => {
+            const january = new Date(date.getFullYear(), 0, 1).getTimezoneOffset();
+            const july = new Date(date.getFullYear(), 6, 1).getTimezoneOffset();
+            return Math.max(january, july) !== date.getTimezoneOffset();
+        };
+
+        // Ajuste de horario de verano (si aplica)
+        const dstOffset = isDST(serverDate) ? 1 : 0;
+
+        // Calcular la fecha y hora en México ajustando la diferencia horaria
+        const mexicoDate = new Date(serverDate.getTime() + (mexicoOffset + dstOffset) * 60 * 60 * 1000);
+
+        // Convertir la fecha y hora a un formato MySQL adecuado
+        const fechaMexico = mexicoDate.toISOString().slice(0, 19).replace('T', ' ');
+
+        const [rows] = await pool.query('INSERT INTO LogsWSE (Fecha, Servicio, Origen) VALUES (?, ?, ?)', [fechaMexico, servicio, origen]);
+
+        return {
+            message: "Registro Exitoso",
+            id: rows.insertId,
+            Fecha: fechaMexico,  // Aquí te devolvemos la fecha en hora de México
+            Servicio: servicio,
+            Origen: origen,
+            aseguradoracampana: rows.aseguradoracampana
+        };
+
+    } catch (error) {
+        return {
+            message: 'Algo está mal',
+            respuesta: error
+        };
+    }
+}
+
+export const ActualizaLogsWS = async (id, successCount, errorCount) => {
+    try {
+        // Corregir la sintaxis SQL
+        const [result] = await pool.query('UPDATE LogsWSE SET successCount = ?, errorCount = ? WHERE id = ?', [successCount, errorCount, id]);
+
+        // Verificar si el registro fue actualizado
+        if (result.affectedRows === 0) return { message: 'Registro no encontrado' };
+
+        return { message: 'Logs actualizados exitosamente' };
+    } catch (error) {
+        return {
+            message: 'Algo está mal',
+            error
+        };
     }
 }
