@@ -552,7 +552,8 @@ export async function RecuperaProspectosEcommerce(req, res) {
 
         // Función para agregar un delay
         const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
+        const respuesta = await LogsWS("RecuperaProspectosEcommerce", "WS")
+        console.log(respuesta.id)
         for (const prospect of prospects) {
             const result = await postProspect(prospect, token);
             if (result.success) {
@@ -566,12 +567,14 @@ export async function RecuperaProspectosEcommerce(req, res) {
             // Agregar un delay de 10 segundos entre cada iteración
             await delay(5000);
         }
-
+        const Logs = await ActualizaLogsWS(respuesta.id, successCount, errorCount)
         res.json({
             message: "Ejecución completada",
             successCount,
-            errorCount
+            errorCount,
+            Logs
         });
+        
     } catch (error) {
         console.error('Error en RecuperaProspectos:', error);
         res.status(500).json({ message: 'Error en la ejecución', error });
