@@ -75,3 +75,5 @@ export const createCE = async (req, res) => {
 
 
 console.log('Prueba')
+
+console.log('otra vez')
