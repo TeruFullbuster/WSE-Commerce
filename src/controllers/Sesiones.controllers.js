@@ -169,46 +169,44 @@ export const createProspecto = async (req, res) => {
     const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource, aseguradoraCampana, firstPage } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
+
     console.log(req.body);
+
     try {
-        const [rows] = await pool.query(
-            'INSERT INTO SesionesFantasma (marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoracampana, firstPage) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
-            [
-                marca, 
-                modelo, 
-                submarca, 
-                descripcion, 
-                nombre, 
-                apellido_paterno, 
-                edad, 
-                genero,
-                codigo_postal, 
-                telefono, 
-                correo, 
-                gclid, 
-                utm, 
-                fecha_creacion, 
-                paso, 
-                leadsource, 
-                aseguradoraCampana || '',  // Asigna una cadena vacía si aseguradoraCampana es undefined
-                firstPage
-            ]
-        );
+        // Construir la consulta SQL dinámicamente
+        let query = 'INSERT INTO SesionesFantasma (marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoracampana, firstPage';
+        let values = [marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana || '', firstPage];
+
+        // Solo agregar descripcion si está presente y no es vacía
+        if (descripcion && descripcion.trim() !== '') {
+            query += ', descripcion'; // Añadir descripcion al query
+            values.push(descripcion);  // Añadir descripcion al array de valores
+        }
+
+        // Cerrar la parte de columnas y añadir los placeholders para los valores
+        query += ') VALUES (' + values.map(() => '?').join(', ') + ')';
+
+        // Ejecutar la consulta
+        const [rows] = await pool.query(query, values);
+
+        // Respuesta exitosa
         res.send({
             message: "Registro Exitoso",
             id: rows.insertId,
             marca,
             modelo,
             submarca,
-            aseguradoracampana: rows.aseguradoracampana
+            aseguradoracampana: rows.aseguradoracampana || '' // Proveer un valor seguro
         });
     } catch (error) {
+        // Manejo de errores
         return res.status(500).json({
             message: 'Algo está mal',
             respuesta: error
         });
     }
 };
+
 
 // Paso 1: Actualizar con Datos del Paso 1
 export const updateProspectoPaso1 = async (req, res) => {
@@ -574,7 +572,7 @@ export async function RecuperaProspectosEcommerce(req, res) {
             errorCount,
             Logs
         });
-        
+
     } catch (error) {
         console.error('Error en RecuperaProspectos:', error);
         res.status(500).json({ message: 'Error en la ejecución', error });
