@@ -72,3 +72,6 @@ export const createCE = async (req, res) => {
     return res.status(500).json({ error: 'Error al realizar la solicitud', details: error });
   }
 };
+
+
+console.log('Prueba')
