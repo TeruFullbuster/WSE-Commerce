@@ -255,23 +255,23 @@ export const updateProspectoEcommerce = async (req, res) => {
         let query = 'UPDATE SesionesFantasma SET paso = ?';
         const params = [paso];
 
-        if (leadsource !== undefined) {
+        if (leadsource !== undefined && leadsource !== null && leadsource !== "null" && leadsource !== "") {
             query += ', leadsource = ?';
             params.push(leadsource);
         }
-        if (aseguradora !== undefined) {
+        if (aseguradora !== undefined && aseguradora !== null && aseguradora !== "null" && aseguradora !== "") {
             query += ', aseguradora = ?';
             params.push(aseguradora);
         }
-        if (descripcion !== undefined) {
+        if (descripcion !== undefined && descripcion !== null && descripcion !== "null" && descripcion !== "") {
             query += ', descripcion = ?';
             params.push(descripcion);
         }
-        if (cvic !== undefined) {
+        if (cvic !== undefined && cvic !== null && cvic !== "null" && cvic !== "") {
             query += ', cvic = ?';
             params.push(cvic);
         }
-        if (aseguradoracampana !== undefined) {
+        if (aseguradoracampana !== undefined && aseguradoracampana !== null && aseguradoracampana !== "null" && aseguradoracampana !== "") {
             query += ', aseguradoracampana = ?';
             params.push(aseguradoracampana);
         }
