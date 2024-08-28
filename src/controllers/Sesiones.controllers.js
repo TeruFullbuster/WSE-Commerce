@@ -467,17 +467,21 @@ export async function RecuperaProspectos(req, res) {
 
         let successCount = 0;
         let errorCount = 0;
+        let enviados = [];  // Array para almacenar los IDs de los prospectos enviados
 
         // Función para agregar un delay
         const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
         const respuesta = await LogsWS("RecuperaProspectos", "WS")
         console.log(respuesta.id)
+        
         for (const prospect of prospects) {
             const result = await postProspect(prospect, token);
             console.log(result.respuesta.data[0].status)
 
             if (result.success && result.respuesta.data[0].status != "error") {
                 successCount++;
+                // Guardar el ID del prospecto enviado exitosamente
+                enviados.push(prospect.id);  // Asegúrate de que `prospect.id` es el campo correcto
             } else {
                 errorCount++;
                 if (result.error?.response && result.error.response.status === 401) {
@@ -487,7 +491,9 @@ export async function RecuperaProspectos(req, res) {
             // Agregar un delay de 10 segundos entre cada iteración
             await delay(5000);
         }
-        const Logs = await ActualizaLogsWS(respuesta.id, successCount, errorCount)
+
+        // Pasar los IDs al actualizar los logs
+        const Logs = await ActualizaLogsWS(respuesta.id, successCount, errorCount, enviados);
         res.json({
             message: "Ejecución completada",
             successCount,
@@ -500,6 +506,7 @@ export async function RecuperaProspectos(req, res) {
         res.status(500).json({ message: 'Error en la ejecución', error });
     }
 }
+
 
 function calcularEdad(fechaNacimiento) {
     // Crear un objeto Date a partir de la fecha de nacimiento
@@ -624,10 +631,10 @@ export const LogsWS = async (servicio, origen) => {
     }
 }
 
-export const ActualizaLogsWS = async (id, successCount, errorCount) => {
+export const ActualizaLogsWS = async (id, successCount, errorCount, enviados) => {
     try {
         // Corregir la sintaxis SQL
-        const [result] = await pool.query('UPDATE LogsWSE SET successCount = ?, errorCount = ? WHERE id = ?', [successCount, errorCount, id]);
+        const [result] = await pool.query('UPDATE LogsWSE SET successCount = ?, errorCount = ?, PaqueteMarcado = ? WHERE id = ?', [successCount, errorCount, enviados, id]);
 
         // Verificar si el registro fue actualizado
         if (result.affectedRows === 0) return { message: 'Registro no encontrado' };
