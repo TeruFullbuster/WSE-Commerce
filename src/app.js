@@ -10,7 +10,7 @@ import cors from 'cors';
 import chicle from 'crypto';
 
 const app = express();
-const PORT = 3000;
+const PORT = 3001;
 
 chicle.randomBytes(16).toString('base64');
 console.log(chicle.randomBytes(16).toString('base64'));

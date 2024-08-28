@@ -480,8 +480,7 @@ export async function RecuperaProspectos(req, res) {
 
             if (result.success && result.respuesta.data[0].status != "error") {
                 successCount++;
-                // Guardar el ID del prospecto enviado exitosamente
-                enviados.push(prospect.id);  // Asegúrate de que `prospect.id` es el campo correcto
+               
             } else {
                 errorCount++;
                 if (result.error?.response && result.error.response.status === 401) {
@@ -489,6 +488,9 @@ export async function RecuperaProspectos(req, res) {
                 }
             }
             // Agregar un delay de 10 segundos entre cada iteración
+             // Guardar el ID del prospecto enviado exitosamente
+             enviados.push(prospect.id);  // Asegúrate de que `prospect.id` es el campo correcto
+             console.log("Enviados " + enviados)
             await delay(5000);
         }
 
@@ -633,11 +635,21 @@ export const LogsWS = async (servicio, origen) => {
 
 export const ActualizaLogsWS = async (id, successCount, errorCount, enviados) => {
     try {
-        // Corregir la sintaxis SQL
-        const [result] = await pool.query('UPDATE LogsWSE SET successCount = ?, errorCount = ?, PaqueteMarcado = ? WHERE id = ?', [successCount, errorCount, enviados, id]);
+        // Convertir el array de IDs en una cadena de texto separada por comas
+        const idsCadena = enviados.join(',');
+
+        console.log(id, successCount, errorCount, idsCadena);
+
+        // Ejecutar la consulta SQL con la cadena de IDs
+        const [result] = await pool.query(
+            'UPDATE LogsWSE SET successCount = ?, errorCount = ?, PaqueteMarcado = ? WHERE id = ?',
+            [successCount, errorCount, idsCadena, id]
+        );
 
         // Verificar si el registro fue actualizado
-        if (result.affectedRows === 0) return { message: 'Registro no encontrado' };
+        if (result.affectedRows === 0) {
+            return { message: 'Registro no encontrado' };
+        }
 
         return { message: 'Logs actualizados exitosamente' };
     } catch (error) {
@@ -647,3 +659,4 @@ export const ActualizaLogsWS = async (id, successCount, errorCount, enviados) =>
         };
     }
 }
+
