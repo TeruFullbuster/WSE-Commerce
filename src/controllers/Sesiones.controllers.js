@@ -556,6 +556,7 @@ export async function RecuperaProspectosEcommerce(req, res) {
 
         let successCount = 0;
         let errorCount = 0;
+        let enviados = [];  // Array para almacenar los IDs de los prospectos enviados
 
         // Función para agregar un delay
         const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -571,10 +572,12 @@ export async function RecuperaProspectosEcommerce(req, res) {
                     return res.status(401).json({ message: "No autorizado" });
                 }
             }
+            enviados.push(prospect.id);  // Asegúrate de que `prospect.id` es el campo correcto
+            console.log("Enviados " + enviados)
             // Agregar un delay de 10 segundos entre cada iteración
             await delay(5000);
         }
-        const Logs = await ActualizaLogsWS(respuesta.id, successCount, errorCount)
+        const Logs = await ActualizaLogsWS(respuesta.id, successCount, errorCount, enviados)
         res.json({
             message: "Ejecución completada",
             successCount,
