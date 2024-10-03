@@ -8,7 +8,7 @@ import Control from './routes/Control.routes.js';
 import CRM from './routes/CRM.routes.js';
 import cors from 'cors';
 import chicle from 'crypto';
-
+import Facebook from './routes/facebook.routes.js';
 const app = express();
 const PORT = 3001;
 
@@ -36,7 +36,7 @@ app.use(RegistroZoho);
 app.use(Generico);
 app.use(Control);
 app.use(CRM);
-
+app.use(Facebook)
 // Configuración del servidor para escuchar en el puerto
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);

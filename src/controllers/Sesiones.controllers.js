@@ -214,28 +214,45 @@ export const updateProspectoPaso1 = async (req, res) => {
     const { aseguradora, precio_cotizacion, cevic, leadidcpy, descripcion, aseguradoracampana, leadsource } = req.body;
     const paso = 1;
     console.log(req.body);
-    try {
-        let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?,  descripcion = ?, cevic = ?, paso = ?';
-        const params = [aseguradora, precio_cotizacion, descripcion, cevic, paso];
 
+    try {
+        let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?, cevic = ?, paso = ?';
+        const params = [aseguradora, precio_cotizacion, cevic, paso];
+
+        // Validar aseguradoracampana
         if (aseguradoracampana !== undefined) {
             query += ', aseguradoracampana = ?';
             params.push(aseguradoracampana);
         }
+
+        // Validar leadidcpy
         if (leadidcpy !== undefined && leadidcpy !== '') {
             query += ', leadidcpy = ?';
             params.push(leadidcpy);
         }
-        if(leadsource !== undefined){
+
+        // Validar leadsource
+        if (leadsource !== undefined) {
             query += ', leadsource = ?';
             params.push(leadsource);
         }
+
+        // Validar descripción
+        if (descripcion !== undefined && descripcion !== '') {
+            query += ', descripcion = ?';
+            params.push(descripcion);
+        }
+
+        // WHERE clause
         query += ' WHERE id = ?';
         params.push(id);
 
+        // Ejecutar la consulta
         const [result] = await pool.query(query, params);
 
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Prospecto no encontrado' });
+        }
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
@@ -244,6 +261,7 @@ export const updateProspectoPaso1 = async (req, res) => {
         });
     }
 };
+
 
 // Paso 2: Actualizar con Datos del Paso 2
 export const updateProspectoEcommerce = async (req, res) => {
