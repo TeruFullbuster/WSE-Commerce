@@ -425,6 +425,7 @@ async function fetchProspectsEcommerce() {
 
 async function postProspect(prospect, token) {
     console.log(token)
+    console.log(prospect)
     const myHeaders = {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`
@@ -436,7 +437,7 @@ async function postProspect(prospect, token) {
             "ramo": "AUTOMOVILES",
             "zip_Code": prospect.codigo_postal,
             "firstPage": prospect.firstPage,
-            "description": `El usuario selecciono un vehiculo con los siguiente datos Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} EDAD: ${calcularEdad(prospect.edad)} Genero: ${prospect.genero === 0 ? 'Masculino' : 'Femenino'} Y Codigo Postal: ${prospect.codigo_postal} Prima Total: ${prospect.precio_cotizacion}`,
+           "description": `El usuario selecciono un vehiculo con los siguiente datos Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} EDAD: ${calcularEdad(prospect.edad)} Genero: ${prospect.genero === 0 ? 'Masculino' : 'Femenino'} Y Codigo Postal: ${prospect.codigo_postal}${prospect.descripcion ? `, Descripción vehicular: ${prospect.descripcion}` : ''}, Prima Total: ${prospect.precio_cotizacion}`,
             "first_Name": prospect.nombre,
             "Last_Name": prospect.apellido_paterno,
             "full_Name": `${prospect.nombre} ${prospect.apellido_paterno}`,
@@ -681,3 +682,88 @@ export const ActualizaLogsWS = async (id, successCount, errorCount, enviados) =>
     }
 }
 
+/// Solicitudes Viraal
+
+// Fetch prospects without a specific field
+async function fetchProspectsViraal() {
+    console.log("Fetching prospects without specific field");
+    const [rows] = await pool.query('CALL FetchProspectsViraal()');
+    return rows[0];
+}
+
+// Ejecutar la obtención y envío de prospectos
+fetchProspectsViraal()
+  .then((prospects) => {
+    if (prospects && prospects.length > 0) {
+        console.log('Prospectos encontrados:', prospects.length);
+      sendProspectsToAPI(prospects);
+    } else {
+      console.log('No se encontraron prospectos para enviar.');
+    }
+  })
+  .catch((error) => {
+    console.error('Error al obtener los prospectos:', error);
+  });
+
+  // Función para enviar los prospectos
+async function sendProspectsToAPI(prospects) {
+    // Filtrar y formatear los prospectos
+    const formattedProspects = prospects.map(formatProspect);
+  
+    // Configuración de los headers
+    const myHeaders = new Headers();
+    myHeaders.append("User", "seguros_int");
+    myHeaders.append("Password", "kj$7ga@_47ha");
+    myHeaders.append("Token", "AIzaSyDFnRNVfvZM7ibHSMLi6FYnZ56H9MTQ02s");
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Cookie", "PHPSESSID=hp3senuc4q46rsgb8i81qcaq9a");
+  
+    // Configuración de la solicitud
+    const requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: JSON.stringify(formattedProspects),
+      redirect: "follow"
+    };
+    /* try {
+      const response = await fetch("https://credifintech.com.mx/sistema/webservice/si_services.php", requestOptions);
+      const result = await response.json();
+      console.log('Respuesta de la API:', result);
+    } catch (error) {
+      console.error('Error al enviar los prospectos:', error);
+    } */
+  }
+
+  // Función para limpiar y formatear un prospecto
+function formatProspect(prospect) {
+    
+    return {
+      marca: prospect.marca || '',
+      modelo: prospect.modelo || '',
+      submarca: prospect.submarca || '',
+      descripcion: prospect.descripcion || '',
+      aseguradora: prospect.aseguradora || '',
+      firstpage: prospect.firstPage || '',
+      leadsource: prospect.leadsource || '',
+      precio_cotizacion: prospect.precio_cotizacion ? prospect.precio_cotizacion.toString() : '',
+      nombre: prospect.nombre || '',
+      apellido_paterno: prospect.apellido_paterno || '',
+      edad: prospect.edad ? formatDate(prospect.edad) : '',
+      genero: prospect.genero ? prospect.genero.toString() : '',
+      codigo_postal: prospect.codigo_postal || '',
+      telefono: prospect.telefono || '',
+      correo: prospect.correo || '',
+      utm: prospect.utm || '',
+      fechaCreacionMex: prospect.creacionMexico,
+      leadidcpy: prospect.LeadidCPY ? prospect.LeadidCPY.toString() : ''
+    };
+  }
+
+  // Función para formatear la fecha al formato dd/mm/yyyy
+function formatDate(date) {
+    const d = new Date(date);
+    const day = String(d.getUTCDate()).padStart(2, '0');
+    const month = String(d.getUTCMonth() + 1).padStart(2, '0'); // Los meses son 0-indexados
+    const year = d.getUTCFullYear();
+    return `${day}/${month}/${year}`;
+}
