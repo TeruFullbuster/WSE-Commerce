@@ -1,3 +1,4 @@
+import e from 'cors';
 import { pool } from '../db.js'
 import fetch from 'node-fetch';
 
@@ -462,17 +463,31 @@ async function postProspect(prospect, token) {
 
     try {
         const response = await fetch("https://wsservicios.gmag.com.mx/ZoohoTools/CRM/CrearProspectosSI", requestOptions);
+        console.log(response)
+        // Verificar si el estado es diferente a 200 (éxito)
+        if (!response.ok) {
+            // Lanzar un error con el estado y el texto del estado si el estado no es 200
+            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        }
+    
+        // Si la respuesta es exitosa (status 200), procesar el JSON
         const result = await response.json();
         console.log(result);
+    
+        // Evaluar si el resultado tiene el ID esperado
         if (result && result.data && result.data[0] && result.data[0].details && result.data[0].details.id) {
             const newId = result.data[0].details.id;
             const updateResult = await ActualizaLeadIDCPY(prospect.id, newId);
             return { success: true, result: updateResult, respuesta: result };
         }
+    
+        // Si no hay ID, retornar el resultado completo
         return { success: true, result, respuesta: result };
     } catch (error) {
-        return { success: false, error, respuesta: error };
+        // Si ocurre un error, ya sea por el estado HTTP o algún otro problema, devolver el error
+        return { success: false, error: error.message, respuesta: error };
     }
+    
 }
 
 export async function RecuperaProspectos(req, res) {
@@ -494,18 +509,26 @@ export async function RecuperaProspectos(req, res) {
         console.log(respuesta.id)
         
         for (const prospect of prospects) {
-            const result = await postProspect(prospect, token);
-            console.log(result.respuesta.data[0].status)
-
-            if (result.success && result.respuesta.data[0].status != "error") {
-                successCount++;
-               
-            } else {
-                errorCount++;
-                if (result.error?.response && result.error.response.status === 401) {
-                    return res.status(401).json({ message: "No autorizado" });
+            const result = await postProspect(prospect, token);            
+            console.log(result.respuesta.Status)
+            if(result.respuesta.Status === "500"){
+                if (result.success &&  result.respuesta.data[0].status != "error") {
+                    console.log(result.respuesta.data[0].status)
+                    successCount++;
+                   
+                } else {
+                    errorCount++;
+                    if (result.error?.response && result.error.response.status === 401) {
+                        return res.status(401).json({ message: "No autorizado" });
+                    }
                 }
+            }else{
+                errorCount++;
+                    if (result.error?.response && result.error.response.status === 401) {
+                        return res.status(401).json({ message: "No autorizado" });
+                    }
             }
+           
             // Agregar un delay de 10 segundos entre cada iteración
              // Guardar el ID del prospecto enviado exitosamente
              enviados.push(prospect.id);  // Asegúrate de que `prospect.id` es el campo correcto
