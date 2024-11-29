@@ -51,4 +51,4 @@ async function obtenerCuentasPublicitarias() {
     }
 }
 
-obtenerCuentasPublicitarias();
+//obtenerCuentasPublicitarias();

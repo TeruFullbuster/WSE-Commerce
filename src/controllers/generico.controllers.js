@@ -8,6 +8,9 @@ import moment from 'moment-timezone';
 
 import archiver from 'archiver';
 
+
+// Condusef Redeco
+
 export const TokenCondusef = async (req, res) => {
     const { users, pass } = req.query;
 
@@ -39,6 +42,56 @@ export const TokenCondusef = async (req, res) => {
         res.status(500).json({ error: 'Error en la solicitud' });
     }
 };
+
+// Condusef Reune
+
+export const TokenCondusefReune = async (req, res) => {
+    const { users, pass } = req.query;
+
+    const myHeaders = {
+        "Content-Type": "application/json",
+        "Cookie": "cookiesession1=678B289B16F3C60FC56F5DD5F13E6DB8"
+    };
+
+    const raw = JSON.stringify({
+        "username": users,
+        "password": pass
+    });
+
+    console.log(raw);
+
+    try {
+        const response = await axios({
+            method: 'GET',
+            url: 'https://api-reune.condusef.gob.mx',
+            headers: myHeaders,
+            data: raw // axios permite data en GET requests
+        });
+
+        const result = response.data;
+        console.log(result);
+        res.status(200).json(result);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Error en la solicitud' });
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Obtener la hora actual en el formato deseado
 const obtenerFechaHoraActual = () => {
@@ -102,8 +155,6 @@ export const getImageEntry = async (req, res) => {
         res.status(500).json({ message: 'Error interno del servidor', error });
     }
 };
-
-
 
 export const getImagesAsZip = async (req, res) => {
     /* try {

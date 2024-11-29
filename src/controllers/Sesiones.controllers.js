@@ -314,12 +314,69 @@ export const updateProspectoEcommerce = async (req, res) => {
 // Paso 2: Actualizar con Datos del Paso 2
 export const updateProspectoPaso2 = async (req, res) => {
     const { id } = req.params;
-    const { primer_nombre, segundo_nombre, apellido_paterno, apellido_materno, dia_nac, mes_nac, anio_nac, rfc, estado_residencia, municipio_residencia, colonia_residencia, calle_residencia, numero_ext_residencia, numero_int_residencia } = req.body;
-    const paso = 2;
+    const {
+        primer_nombre = null,
+        segundo_nombre = null,
+        apellido_paterno = null,
+        apellido_materno = null,
+        dia_nac = null,
+        mes_nac = null,
+        anio_nac = null,
+        rfc = null,
+        estado_residencia = null,
+        municipio_residencia = null,
+        colonia_residencia = null,
+        calle_residencia = null,
+        numero_ext_residencia = null,
+        numero_int_residencia = null,
+        leadsource = null,
+    } = req.body;
+    const paso = 3;
 
     try {
-        const [result] = await pool.query('UPDATE SesionesFantasma SET primer_nombre = ?, segundo_nombre = ?, apellido_materno = ?, dia_nac = ?, mes_nac = ?, anio_nac = ?, rfc = ?, estado_residencia = ?, municipio_residencia = ?, colonia_residencia = ?, calle_residencia = ?, numero_ext_residencia = ?, numero_int_residencia = ?, paso = ? WHERE id = ?', [primer_nombre, segundo_nombre, apellido_paterno, apellido_materno, dia_nac, mes_nac, anio_nac, rfc, estado_residencia, municipio_residencia, colonia_residencia, calle_residencia, numero_ext_residencia, numero_int_residencia, paso, id]);
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+        const [result] = await pool.query(
+            `UPDATE SesionesFantasma 
+             SET primer_nombre = ?, 
+                 segundo_nombre = ?, 
+                 apellido_paterno = ?, 
+                 apellido_materno = ?, 
+                 dia_nac = ?, 
+                 mes_nac = ?, 
+                 anio_nac = ?, 
+                 rfc = ?, 
+                 estado_residencia = ?, 
+                 municipio_residencia = ?, 
+                 colonia_residencia = ?, 
+                 calle_residencia = ?, 
+                 numero_ext_residencia = ?, 
+                 numero_int_residencia = ?, 
+                 paso = ?,
+                 leadsource = ? 
+             WHERE id = ?`, 
+            [
+                primer_nombre, 
+                segundo_nombre, 
+                apellido_paterno, 
+                apellido_materno, 
+                dia_nac, 
+                mes_nac, 
+                anio_nac, 
+                rfc, 
+                estado_residencia, 
+                municipio_residencia, 
+                colonia_residencia, 
+                calle_residencia, 
+                numero_ext_residencia, 
+                numero_int_residencia, 
+                paso, 
+                leadsource,
+                id
+            ]
+        );
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Prospecto no encontrado' });
+        }
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
@@ -328,6 +385,7 @@ export const updateProspectoPaso2 = async (req, res) => {
         });
     }
 };
+
 
 // Paso 3: Actualizar con Datos del Paso 3
 export const updateProspectoPaso3 = async (req, res) => {

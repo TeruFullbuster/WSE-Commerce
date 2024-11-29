@@ -6,6 +6,7 @@ import RegistroZoho from './routes/RegistroZoho.routes.js';
 import Generico from './routes/generico.routes.js';
 import Control from './routes/Control.routes.js';
 import CRM from './routes/CRM.routes.js';
+import Documentos from './routes/documentos.routes.js';
 import cors from 'cors';
 import chicle from 'crypto';
 import Facebook from './routes/facebook.routes.js';
@@ -37,6 +38,7 @@ app.use(Generico);
 app.use(Control);
 app.use(CRM);
 app.use(Facebook)
+app.use(Documentos)
 // Configuración del servidor para escuchar en el puerto
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
