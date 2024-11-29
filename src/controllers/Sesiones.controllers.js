@@ -263,37 +263,32 @@ export const updateProspectoPaso1 = async (req, res) => {
     }
 };
 
-
 // Paso 2: Actualizar con Datos del Paso 2
 export const updateProspectoEcommerce = async (req, res) => {
     const { id } = req.params; 
-    const { leadsource, aseguradora, aseguradoracampana, descripcion, cvic  } = req.body;
+    const { leadsource, aseguradora, aseguradoracampana, descripcion, cvic, idCotMAG } = req.body;
     const paso = 2;
 
     try {
         let query = 'UPDATE SesionesFantasma SET paso = ?';
         const params = [paso];
 
-        if (leadsource !== undefined && leadsource !== null && leadsource !== "null" && leadsource !== "") {
-            query += ', leadsource = ?';
-            params.push(leadsource);
-        }
-        if (aseguradora !== undefined && aseguradora !== null && aseguradora !== "null" && aseguradora !== "") {
-            query += ', aseguradora = ?';
-            params.push(aseguradora);
-        }
-        if (descripcion !== undefined && descripcion !== null && descripcion !== "null" && descripcion !== "") {
-            query += ', descripcion = ?';
-            params.push(descripcion);
-        }
-        if (cvic !== undefined && cvic !== null && cvic !== "null" && cvic !== "") {
-            query += ', cvic = ?';
-            params.push(cvic);
-        }
-        if (aseguradoracampana !== undefined && aseguradoracampana !== null && aseguradoracampana !== "null" && aseguradoracampana !== "") {
-            query += ', aseguradoracampana = ?';
-            params.push(aseguradoracampana);
-        }
+        // Agregar campos dinámicamente si están disponibles
+        const fieldsToUpdate = [
+            { field: 'leadsource', value: leadsource },
+            { field: 'aseguradora', value: aseguradora },
+            { field: 'descripcion', value: descripcion },
+            { field: 'cvic', value: cvic },
+            { field: 'aseguradoracampana', value: aseguradoracampana },
+            { field: 'idCotMAG', value: idCotMAG }
+        ];
+
+        fieldsToUpdate.forEach(({ field, value }) => {
+            if (value !== undefined && value !== null && value !== "null" && value !== "") {
+                query += `, ${field} = ?`;
+                params.push(value);
+            }
+        });
 
         query += ' WHERE id = ?';
         params.push(id);
@@ -306,13 +301,13 @@ export const updateProspectoEcommerce = async (req, res) => {
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
-        return res.status(500).json({ message: 'Algo está mal' });
+        return res.status(500).json({ message: 'Algo está mal', error: error.message });
     }
 };
 
 
-// Paso 2: Actualizar con Datos del Paso 2
 export const updateProspectoPaso2 = async (req, res) => {
+    console.log("Datos recibidos:", req.body);
     const { id } = req.params;
     const {
         primer_nombre = null,
@@ -331,9 +326,11 @@ export const updateProspectoPaso2 = async (req, res) => {
         numero_int_residencia = null,
         leadsource = null,
     } = req.body;
+
     const paso = 3;
 
     try {
+        // Ejecutar el UPDATE
         const [result] = await pool.query(
             `UPDATE SesionesFantasma 
              SET primer_nombre = ?, 
@@ -374,18 +371,29 @@ export const updateProspectoPaso2 = async (req, res) => {
             ]
         );
 
+        console.log("Resultado del UPDATE:", result);
+
+        // Validar resultado del UPDATE
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Prospecto no encontrado' });
+            return res.status(404).json({ message: 'Prospecto no encontrado o datos no modificados' });
+        }
+
+        if (result.changedRows === 0) {
+            return res.status(200).json({ 
+                message: 'Datos idénticos, no se realizaron cambios',
+                info: result.info 
+            });
         }
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
+        console.error("Error en el UPDATE:", error);
         return res.status(500).json({
-            message: 'Algo está mal'
+            message: 'Algo está mal',
+            error: error.message
         });
     }
 };
-
 
 // Paso 3: Actualizar con Datos del Paso 3
 export const updateProspectoPaso3 = async (req, res) => {
