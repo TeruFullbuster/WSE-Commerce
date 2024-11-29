@@ -514,9 +514,22 @@ async function postProspect(prospect, token) {
         prospect.direccion_completa = `${prospect.calle_residencia} ${prospect.numero_ext_residencia || ""}${prospect.numero_int_residencia ? " Int. " + prospect.numero_int_residencia : ""}, ${prospect.colonia_residencia}, ${prospect.municipio_residencia}, ${prospect.estado_residencia}, México, ${prospect.codigo_postal}`;
 
         // Reconstruir descripción con datos adicionales
-        prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} Edad: ${prospect.edad} Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} Código Postal: ${prospect.codigo_postal} ${prospect.descripcion ? `Descripción vehicular: ${prospect.descripcion}` : ""} RFC: ${prospect.RFC || "N/A"} Dirección: ${prospect.direccion_completa || "N/A"} Prima Total: ${prospect.precio_cotizacion}`;
+        prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: 
+        Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} 
+        Edad: ${prospect.edad} 
+        Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} 
+        Código Postal: ${prospect.codigo_postal} 
+        ${prospect.descripcion ? `Descripción vehicular: ${prospect.descripcion}` : ""} 
+        RFC: ${prospect.RFC || "N/A"} 
+        Dirección: ${prospect.direccion_completa || "N/A"} 
+        Prima Total: ${prospect.precio_cotizacion}`;
+    } else {
+        // Descripción para otros pasos
+        prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} Edad: ${calcularEdad(prospect.edad)} Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} Código Postal: ${prospect.codigo_postal} ${prospect.descripcion ? `, Descripción vehicular: ${prospect.descripcion}` : ""} Prima Total: ${prospect.precio_cotizacion}`;
     }
+
     console.log(prospect);
+
     // Construir el cuerpo de la petición
     const raw = JSON.stringify({
         "ProspectoZoho": {
@@ -574,6 +587,7 @@ async function postProspect(prospect, token) {
         return { success: false, error: error.message, respuesta: error };
     }
 }
+
 
 export async function RecuperaProspectos(req, res) {
     try {
