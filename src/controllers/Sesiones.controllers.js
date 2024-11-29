@@ -265,7 +265,7 @@ export const updateProspectoPaso1 = async (req, res) => {
 
 // Paso 2: Actualizar con Datos del Paso 2
 export const updateProspectoEcommerce = async (req, res) => {
-    const { id } = req.params; 
+    const { id } = req.params;
     const { leadsource, aseguradora, aseguradoracampana, descripcion, cvic, idCotMAG } = req.body;
     const paso = 2;
 
@@ -278,7 +278,7 @@ export const updateProspectoEcommerce = async (req, res) => {
             { field: 'leadsource', value: leadsource },
             { field: 'aseguradora', value: aseguradora },
             { field: 'descripcion', value: descripcion },
-            { field: 'cvic', value: cvic },
+            { field: 'cevic', value: cvic }, // Mapear 'cvic' a 'cevic' en la base de datos
             { field: 'aseguradoracampana', value: aseguradoracampana },
             { field: 'idCotMAG', value: idCotMAG }
         ];
