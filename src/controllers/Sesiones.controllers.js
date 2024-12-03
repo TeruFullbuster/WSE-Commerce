@@ -397,7 +397,7 @@ export const updateProspectoPaso2 = async (req, res) => {
 export const updateProspectoPaso3 = async (req, res) => {
     const { id } = req.params;
     const { niv, no_motor, placa } = req.body;
-    const paso = 3;
+    const paso = 4;
     console.log(req.body);
     try {
         const [result] = await pool.query('UPDATE SesionesFantasma SET niv = ?, no_motor = ?, placa = ?, paso = ? WHERE id = ?', [niv, no_motor, placa, paso, id]);
@@ -498,8 +498,8 @@ async function postProspect(prospect, token) {
         "Authorization": `Bearer ${token}`
     };
 
-    // Reconstruir valores si el paso es 3
-    if (prospect.paso === 3) {
+    // Reconstruir valores si el paso es 3 o 4
+    if (prospect.paso === 3 || prospect.paso === 4) {
         // Reconstruir fecha de nacimiento
         if (prospect.dia_nac && prospect.mes_nac && prospect.anio_nac) {
             prospect.edad = `${prospect.anio_nac}-${prospect.mes_nac}-${prospect.dia_nac}`;
@@ -514,8 +514,14 @@ async function postProspect(prospect, token) {
         prospect.direccion_completa = `${prospect.calle_residencia} ${prospect.numero_ext_residencia || ""}${prospect.numero_int_residencia ? " Int. " + prospect.numero_int_residencia : ""}, ${prospect.colonia_residencia}, ${prospect.municipio_residencia}, ${prospect.estado_residencia}, México, ${prospect.codigo_postal}`;
 
         // Reconstruir descripción con datos adicionales
-        prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} Edad: ${prospect.edad} Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} Código Postal: ${prospect.codigo_postal} ${prospect.descripcion ? `Descripción vehicular: ${prospect.descripcion}` : ""} RFC: ${prospect.RFC || "N/A"} Dirección: ${prospect.direccion_completa || "N/A"} Prima Total: ${prospect.precio_cotizacion}`; 
-    } else {        // Descripción para otros pasos
+        prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} Edad: ${prospect.edad} Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} Código Postal: ${prospect.codigo_postal} ${prospect.descripcion ? `Descripción vehicular: ${prospect.descripcion}` : ""} RFC: ${prospect.RFC || "N/A"} Dirección: ${prospect.direccion_completa || "N/A"} Prima Total: ${prospect.precio_cotizacion}`;
+
+        // Si el paso es 4, agregar placas, NIV y número de motor
+        if (prospect.paso === 4) {
+            prospect.descripcion += ` Placas: ${prospect.placas || "N/A"} NIV: ${prospect.niv || "N/A"} Número de Motor: ${prospect.num_motor || "N/A"}`;
+        }
+    } else {
+        // Descripción para otros pasos
         prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} Edad: ${calcularEdad(prospect.edad)} Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} Código Postal: ${prospect.codigo_postal} ${prospect.descripcion ? `, Descripción vehicular: ${prospect.descripcion}` : ""} Prima Total: ${prospect.precio_cotizacion}`;
     }
 
@@ -578,6 +584,7 @@ async function postProspect(prospect, token) {
         return { success: false, error: error.message, respuesta: error };
     }
 }
+
 
 
 export async function RecuperaProspectos(req, res) {
