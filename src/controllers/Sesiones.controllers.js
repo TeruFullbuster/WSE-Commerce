@@ -498,6 +498,11 @@ async function postProspect(prospect, token) {
         "Authorization": `Bearer ${token}`
     };
 
+    // Procesar el campo gclid para manejar múltiples valores separados por coma
+    if (prospect.gclid && prospect.gclid.includes(",")) {
+        prospect.gclid = prospect.gclid.split(",")[0].trim();
+    }
+
     // Reconstruir valores si el paso es 3 o 4
     if (prospect.paso === 3 || prospect.paso === 4) {
         // Reconstruir fecha de nacimiento
@@ -584,7 +589,6 @@ async function postProspect(prospect, token) {
         return { success: false, error: error.message, respuesta: error };
     }
 }
-
 
 
 export async function RecuperaProspectos(req, res) {
