@@ -4,7 +4,7 @@ import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
 import puppeteer from 'puppeteer';
 import xmlbuilder from 'xmlbuilder';
-
+import { chromium } from 'playwright';
 
 export const CotizarQualitas = async (req, res) => {
     const {
