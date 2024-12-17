@@ -479,5 +479,110 @@ const toggleOptions = async (firstOption, secondOption) => {
     await delay(1000);
 };
 
+export const BotcotizacionQualitasCopy = async (req, res) => {
+    const { VIN, Days, insuredName } = req.body;
+    const agentKey = "84886";
+    const account = "MAESTRA";
+    const password = "IWZ332";
+
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
+    try {
+        const browser = await chromium.launch({ headless: false });
+        const page = await browser.newPage();
+        await page.setViewportSize({ width: 1280, height: 800 });
+
+        // Navegación al portal
+        await page.goto('https://agentes360.qualitas.com.mx/web/guest/home', { waitUntil: 'networkidle' });
+
+        // Inicio de sesión
+        await page.fill('#_com_liferay_login_web_portlet_LoginPortlet_login', agentKey);
+        await page.fill('#_com_liferay_login_web_portlet_LoginPortlet_account', account);
+        await page.fill('#_com_liferay_login_web_portlet_LoginPortlet_password', password);
+
+        await Promise.all([
+            page.click('button[type="submit"]'),
+            page.waitForLoadState('networkidle')
+        ]);
+
+        // Navegación a la página específica
+        await page.goto('https://agentes360.qualitas.com.mx/group/guest/nueva-cotizacion', { waitUntil: 'networkidle' });
+
+        // Función auxiliar para alternar opciones
+        const toggleOptions = async (firstOption, secondOption) => {
+            console.log(`Seleccionando opción: ${firstOption}`);
+            await page.click(`label[for="${firstOption}"]`);
+            await delay(1000);
+
+            console.log(`Cambiando temporalmente a opción: ${secondOption}`);
+            await page.click(`label[for="${secondOption}"]`);
+            await delay(1000);
+
+            console.log(`Volviendo a seleccionar opción: ${firstOption}`);
+            await page.click(`label[for="${firstOption}"]`);
+            await delay(1000);
+        };
+
+        // Simular selección para negocio 5
+        await toggleOptions('negocio_5_origin', 'negocio_6_origin');
+
+        // Alternar entre 'uso_1_packages' y 'uso_5_packages'
+        await toggleOptions('uso_1_packages', 'uso_5_packages');
+
+        // Alternar entre 'uso_1011_vehicle' y 'uso_1051_vehicle'
+        await toggleOptions('uso_1011_vehicle', 'uso_1051_vehicle');
+
+        // Verificar si 'uso_1011_vehicle' está seleccionado
+        const isUso1011Selected = await page.isChecked('#uso_1011_vehicle');
+
+        if (isUso1011Selected) {
+            console.log("El elemento 'uso_1011_vehicle' está seleccionado. Pulsando el botón de submit...");
+            await page.click('#buttonOrigenYUso');
+            console.log("Formulario enviado.");
+        } else {
+            console.log("El elemento 'uso_1011_vehicle' no está seleccionado. No se enviará el formulario.");
+            throw new Error("El elemento 'uso_1011_vehicle' no se pudo seleccionar.");
+        }
+
+        // Rellenar formulario de búsqueda
+        console.log("Rellenando VIN...");
+        await page.fill('#VINTuristas', VIN);
+        await page.press('#VINTuristas', 'Enter');
+        await delay(2000);
+
+        // Buscar y pulsar 'Siguiente'
+        console.log("Pulsando 'Siguiente'...");
+        await page.click('button.btn.btn-primary[type="submit"]', { timeout: 5000 });
+        await delay(3000);
+
+        // Asignar valor al select de 'Days'
+        console.log(`Seleccionando valor '${Days}' en 'selectMonths`);
+        await page.selectOption('#selectMonths', Days);
+        await delay(1000);
+
+        // Asignar insuredName
+        console.log("Rellenando insuredName...");
+        await page.fill('#insuredName', insuredName);
+        await delay(1000);
+
+        // Pulsar 'Siguiente'
+        console.log("Confirmando el formulario...");
+        await page.click('button.btn.btn-primary[type="submit"]');
+        await delay(3000);
+
+        // Extraer 'Primer Pago'
+        console.log("Extrayendo valores de 'Primer Pago'...");
+        const paymentValues = await page.locator('text=Primer pago').locator('xpath=../..').locator('p.h5.text-body').innerText();
+        const [usd, mxn] = paymentValues.split('/').map(value => value.trim());
+
+        console.log("Valores extraídos:", { usd, mxn });
+        await browser.close();
+
+        res.status(200).json({ message: 'VIN ingresado y búsqueda completada exitosamente', paymentValues: { usd, mxn } });
+    } catch (error) {
+        console.error('Error durante el proceso:', error);
+        res.status(500).json({ message: 'Error durante el proceso', error: error.message });
+    }
+};
 
 
