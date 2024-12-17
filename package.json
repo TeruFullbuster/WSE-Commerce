@@ -13,7 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "archiver": "^7.0.1",
-    "axios": "^1.7.5",
+    "axios": "^1.7.8",
     "buffer": "^6.0.3",
     "cheerio": "^1.0.0",
     "cors": "^2.8.5",
@@ -34,7 +34,7 @@
     "pdf-parse": "^1.1.1",
     "pdf2json": "^3.1.4",
     "pdfjs-dist": "^4.8.69",
-    "puppeteer": "^22.8.0",
+    "puppeteer": "^22.15.0",
     "wse-commerce": "file:",
     "xml2js": "^0.6.2"
   }

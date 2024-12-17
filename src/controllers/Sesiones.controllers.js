@@ -590,7 +590,6 @@ async function postProspect(prospect, token) {
     }
 }
 
-
 export async function RecuperaProspectos(req, res) {
     try {
         const token = await obtenerToken();
