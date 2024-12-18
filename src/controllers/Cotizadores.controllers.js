@@ -1700,7 +1700,7 @@ export const EspejoQualitas = async (req, res) => {
         } = req.body;
 
         // URL del endpoint externo
-        const url = "http://34.46.77.143:3001/Cotizar//QualitasBot";
+        const url = "http://34.46.77.143:3001/Cotizar/QualitasBot";
 
         // Datos para el POST
         const data = {
