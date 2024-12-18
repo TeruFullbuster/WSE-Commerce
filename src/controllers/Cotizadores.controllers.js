@@ -195,6 +195,191 @@ export const CotizarChubb = async (req, res) => {
     }
 };
 
+export const BotcotizacionChubb = async (req, res) => {
+    const {  noSerieNIV,
+        valorVehiculoUSD,
+        diasCobertura,
+        zonaCobertura,
+        hibridoElectrico,
+        tieneRemolque,
+        tipoDeducible,
+        edadConductor,
+        nombreContacto,
+        apellidoContacto,
+        emailContacto,
+        celularContacto,
+        documentoPDF1, // Base64 del primer PDF
+        documentoPDF2  // Base64 del segundo PDF
+         } = req.body; // Recibe el VIN del body
+         let insertedId; // Declarar la variable fuera del try
+         try {
+            // Construir la consulta SQL dinámicamente
+            let query = `
+                INSERT INTO CotizacionesTuristas (
+                    noSerieNIV,
+                    valorVehiculoUSD,
+                    diasCobertura,
+                    zonaCobertura,
+                    hibridoElectrico,
+                    tieneRemolque,
+                    tipoDeducible,
+                    edadConductor,
+                    nombreContacto,
+                    apellidoContacto,
+                    emailContacto,
+                    celularContacto,
+                    horaCotizacion
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())
+            `;
+    
+            // Valores a insertar
+            let values = [
+                noSerieNIV,
+                valorVehiculoUSD,
+                diasCobertura,
+                zonaCobertura,
+                hibridoElectrico || 'No', // Default 'No' si no está definido
+                tieneRemolque || 'No',    // Default 'No'
+                tipoDeducible,
+                edadConductor,
+                nombreContacto,
+                apellidoContacto,
+                emailContacto,
+                celularContacto
+            ];
+    
+            // Ejecutar la consulta
+            const [rows] = await pool.query(query, values);
+            // Capturar el ID insertado
+            insertedId = rows.insertId;
+            
+            console.log(`ID generado en la inserción: ${insertedId}`);
+        } catch (error) {
+            // Manejo de errores
+            return res.status(500).json({
+                message: 'Algo salió mal durante el registro',
+                error: error.message
+            });
+        }
+    const agentKey = "MAGAGEN";
+    const password = "Chubb2025!";
+
+    const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+    
+    try {
+        const browser = await puppeteer.launch({ headless: false });
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1280, height: 800 });
+
+        // Navegación al portal
+        await page.goto('https://chubbcrossborder.com/index.php', { waitUntil: 'networkidle2' });
+
+        // Inicio de sesión
+        await page.type('#user', agentKey);
+        await page.type('#pass', password);
+
+        // Hacer clic en el botón Login
+        await page.evaluate(() => {
+            document.querySelector('a.btn').click();
+        });
+
+        // Esperar navegación después del clic
+        await page.waitForNavigation({ waitUntil: 'networkidle2' });
+
+        console.log('Inicio de sesión exitoso.');
+
+        // Abrir menú btn-menu
+        const menuButtonSelector = '#btn-menu';
+        await page.waitForSelector(menuButtonSelector, { visible: true });
+        await page.click(menuButtonSelector);
+        console.log('Menú abierto con éxito.');
+
+        // Agregar delay para que el menú cargue
+        await delay(2000);
+
+        // Selector del enlace dentro del menú desplegable Tasks
+        const linkSelector = 'ul#task a.title.menu';
+        const linkText = 'Quote Mexican Auto Insurance';
+
+        // Buscar el enlace por texto y hacer clic
+        const links = await page.$$eval(linkSelector, (elements, text) => {
+            for (const el of elements) {
+                if (el.textContent.trim() === text) {
+                    el.click();
+                    return true; // Retorna true si se realizó el clic
+                }
+            }
+            return false; // Retorna false si no encontró el enlace
+        }, linkText);
+
+        if (links) {
+            console.log(`Clic realizado en el enlace: "${linkText}"`);
+            await delay(3000); // Esperar navegación
+        } else {
+            console.error(`No se encontró el enlace con texto: "${linkText}"`);
+        }
+
+        // Llenado de formulario
+
+        // Espera a que cargue el formulario principal
+        await delay(3000); // Pausa para garantizar el cargado
+
+        // Buscar si hay iframes y cambiar al contexto correcto
+        const frames = await page.frames();
+        const formFrame = frames.find(frame => frame.name() === 'menu_inbox'); // Buscar el iframe por nombre
+
+        if (!formFrame) {
+            throw new Error("No se encontró el iframe del formulario.");
+        }
+
+        console.log('Cambiando contexto al iframe...');
+        await formFrame.waitForSelector('input[name="txt_Name"]', { visible: true, timeout: 0 });
+        console.log('Formulario detectado.');
+         // Esperar y dar clic en el botón Mexico
+         await formFrame.waitForSelector('a.btn', { visible: true });
+         await formFrame.click('a.btn');
+        // Llenar campos del formulario
+        await formFrame.type('input[name="txt_Name"]', nombreContacto);
+        await formFrame.type('input[name="txt_LName"]', apellidoContacto);
+        await formFrame.select('select[name="days"]', diasCobertura);
+
+        if (zonaCobertura === 'Zona A') {
+            await formFrame.select('select[name="territory"]', '1');
+            
+        }
+        if (hibridoElectrico === 'Sí') {
+            await formFrame.click('input#hybrid');
+        }
+        if (tieneRemolque === 'Sí') {
+            await formFrame.click('input#tow');
+        }
+
+        console.log('Formulario llenado correctamente.');
+        await delay(1000);
+
+        await formFrame.select('#vehicleTypeId', '1');
+
+        await delay(1000);
+
+        await formFrame.select('#vehicleValue', valorVehiculoUSD);
+
+        await delay(1000);
+
+        const [button] = await page.$("//a[@class='btn' and @href='javascript:Dopost_ini();']");
+        if (button) {
+        await button.click();
+        console.log('Clic realizado en el botón con href="javascript:Dopost_ini();"');
+        } else {
+        console.error('No se encontró el botón con href="javascript:Dopost_ini();".');
+        }
+
+    } catch (error) {
+        console.error('Error durante el proceso:', error);
+        
+        res.status(500).json({ message: 'Error durante el proceso', error: error.message });
+    }
+};
+
 export const BotcotizacionQualitas = async (req, res) => {
     const {  noSerieNIV,
         valorVehiculoUSD,
@@ -1492,4 +1677,67 @@ if (emision.EdoNacimiento) {
     }
 
     console.log("Formulario 'Asegurado Física' rellenado exitosamente.");
+};
+
+// Funciones Espejo para SSL
+
+export const EspejoQualitas = async (req, res) => {
+    try {
+        // Extraer datos del body
+        const {  
+            noSerieNIV,
+            valorVehiculoUSD,
+            diasCobertura,
+            zonaCobertura,
+            hibridoElectrico,
+            tieneRemolque,
+            tipoDeducible,
+            edadConductor,
+            nombreContacto,
+            apellidoContacto,
+            emailContacto,
+            celularContacto
+        } = req.body;
+
+        // URL del endpoint externo
+        const url = "http://34.46.77.143:3001/Cotizar//QualitasBot";
+
+        // Datos para el POST
+        const data = {
+            noSerieNIV: noSerieNIV,
+            valorVehiculoUSD: valorVehiculoUSD, // Aquí toma el valor correcto del body
+            diasCobertura: diasCobertura,
+            zonaCobertura: zonaCobertura,
+            hibridoElectrico: hibridoElectrico,
+            tieneRemolque: tieneRemolque,
+            tipoDeducible: tipoDeducible,
+            edadConductor: edadConductor,
+            nombreContacto: nombreContacto,
+            apellidoContacto: apellidoContacto,
+            emailContacto: emailContacto,
+            celularContacto: celularContacto
+        };
+
+        // Hacer la solicitud al endpoint externo
+        const response = await axios.post(url, data, {
+            headers: { "Content-Type": "application/json" }
+        });
+
+        // Enviar la respuesta del servidor externo al cliente
+        res.status(200).json({
+            success: true,
+            message: "Datos enviados y procesados correctamente.",
+            data: response.data // Respuesta del endpoint externo
+        });
+
+    } catch (error) {
+        console.error("Error al consumir el endpoint:", error.message);
+
+        // Manejar errores y enviar respuesta al cliente
+        res.status(500).json({
+            success: false,
+            message: "Error al consumir el endpoint externo.",
+            error: error.message
+        });
+    }
 };
