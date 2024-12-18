@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { CotizarQualitas,BotcotizacionQualitas, BotcotizacionQualitasCopy } from '../controllers/Cotizadores.controllers.js'
+import { CotizarQualitas,BotcotizacionQualitas, BotEmisionQualitas } from '../controllers/Cotizadores.controllers.js'
 
 const router = Router()
 
@@ -8,6 +8,6 @@ router.post('/Cotizar/Qualitas' , CotizarQualitas)
 
 router.post('/Cotizar/QualitasBot' , BotcotizacionQualitas)
 
-router.post('/Cotizar/QualitasBot2' , BotcotizacionQualitasCopy)
+router.post('/Emitir/QualitasBot' , BotEmisionQualitas)
 
 export default router
