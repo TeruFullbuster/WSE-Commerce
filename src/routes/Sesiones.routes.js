@@ -3,7 +3,7 @@ import { Router } from "express";
 import { updateProspectoEcommerce, POSTSesion , PutSesion, PutPass , 
     POSTFormulario, createProspecto, updateProspectoPaso1, updateProspectoPaso2, 
     updateProspectoPaso3, updateProspectoPaso4, RecuperaProspectos, TraemelosEcommerce,
-    RecuperaProspectosEcommerce } from '../controllers/Sesiones.controllers.js'
+    RecuperaProspectosEcommerce, GetCotID, GetToken } from '../controllers/Sesiones.controllers.js'
 
 const router = Router()
 
@@ -32,5 +32,9 @@ router.put('/prospecto/:id/Ecommerce', updateProspectoEcommerce);
 router.get('/TraemelosEcommerce', TraemelosEcommerce);
 
 router.get('/RecuperaProspectosEcommerce', RecuperaProspectosEcommerce);
+
+router.get('/GetCotID/:id', GetCotID);
+
+router.post('/GetToken', GetToken);
 
 export default router

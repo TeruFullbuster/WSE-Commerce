@@ -1,6 +1,9 @@
 import e from 'cors';
 import { pool } from '../db.js'
 import fetch from 'node-fetch';
+import jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt'
+import moment from 'moment-timezone';
 
 export const POSTSesion  = async (req, res) => {
     const {URL,FechaDCreacion,IP,primaTotal} = req.body
@@ -805,6 +808,98 @@ export const ActualizaLogsWS = async (id, successCount, errorCount, enviados) =>
     }
 }
 
+export async function GetCotID(req, res) {
+    const { id } = req.params;  // Extraer el id de la solicitud
+    console.log(id);
+
+    // Obtener la cabecera Authorization y extraer el token
+    const authorization = req.headers.authorization;
+    
+    // Verificar si el token está presente en la cabecera
+    if (!authorization) {
+        return res.status(401).json({ message: 'Token no proporcionado' });
+    }
+    console.log(authorization);
+
+    // El token viene en formato 'Bearer <token>', lo extraemos
+    const token = authorization.split(' ')[1]; // Obtener el token después de 'Bearer'
+    console.log(token);
+
+    if (!token) {
+        return res.status(401).json({ message: 'Token no proporcionado' });
+    }
+
+    try {
+        console.log("Fetching prospect using provided idCot");
+
+        // Validar el token usando la función validateToken
+        const isValid = await validateToken(token);  // Usamos await para esperar la validación del token
+
+        if (!isValid) {
+            return res.status(401).json({ message: 'Token inválido o expirado' });
+        }
+
+        // Llamar al procedimiento almacenado pasando el id como parámetro
+        const [rows] = await pool.query('CALL FetchProspectID(?)', [id]);
+
+        if (rows.length > 0) {
+            const data = rows[0][0];  // Acceder al primer resultado del procedimiento
+
+            // Organizar los datos en diferentes secciones
+            const response = {
+                message: "OK",
+                contacto: {
+                    nombre: data.nombre,
+                    primer_nombre: data.primer_nombre,
+                    segundo_nombre: data.segundo_nombre,
+                    apellido_paterno: data.apellido_paterno,
+                    apellido_materno: data.apellido_materno,
+                    telefono: data.telefono,
+                    correo: data.correo,
+                    edad: data.edad ? new Date(data.edad).toLocaleDateString() : null,
+                    rfc: data.rfc,
+                },
+                vehiculo: {
+                    marca: data.marca,
+                    modelo: data.modelo,
+                    submarca: data.submarca,
+                    cevic: data.cevic,
+                    "Prima Total": data.precio_cotizacion,
+                    num_cotizacion: data.num_cotizacion,
+                    placa: data.placa,
+                    num_motor: data.num_motor,
+                },
+                domicilio: {
+                    codigo_postal: data.codigo_postal,
+                    estado_residencia: data.estado_residencia,
+                    municipio_residencia: data.municipio_residencia,
+                    colonia_residencia: data.colonia_residencia,
+                    calle_residencia: data.calle_residencia,
+                    numero_ext_residencia: data.numero_ext_residencia,
+                    numero_int_residencia: data.numero_int_residencia,
+                },
+                adicional: {                    
+                    comentario: data.Comentario,
+                    gclid: data.gclid,
+                    utm: data.utm,
+                    fecha_creacion: data.fecha_creacion ? new Date(data.fecha_creacion).toLocaleString() : null,
+                    fecha_ultima_actualizacion: data.fecha_ultima_actualizacion ? new Date(data.fecha_ultima_actualizacion).toLocaleString() : null,
+                }
+            };
+
+            res.json(response);
+        } else {
+            res.json({ message: "No data found for the provided ID" });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error",
+            error: error.message
+        });
+    }
+}
+
 /// Solicitudes Viraal
 
 // Fetch prospects without a specific field
@@ -890,3 +985,89 @@ const month = String(d.getUTCMonth() + 1).padStart(2, '0'); // Los meses son 0-i
 const year = d.getUTCFullYear();
 return `${day}/${month}/${year}`;
 }
+
+// Tokens
+
+const secretKey = 'your-secret-key';  // Cambia esto por una clave secreta fuerte
+
+// Función para crear un token
+async function createToken(userId) {
+    const expiresIn = 30 * 60; // 30 minutos en segundos
+    const token = jwt.sign({ userId }, secretKey, { expiresIn });
+
+    // Obtener la hora actual de México (zona horaria CST/CDT)
+    const expiresAt = moment().tz('America/Mexico_City').add(30, 'minutes').format('YYYY-MM-DD HH:mm:ss');  // Agregar 30 minutos y formatear como cadena
+
+    // Guardar el token en la base de datos
+    await pool.query('INSERT INTO tokens (token, expires_at) VALUES (?, ?)', [token, expiresAt]);
+
+    console.log('Token generado:', token);
+    console.log('Fecha de expiración:', expiresAt);
+
+    return { token, expiresAt };  // Retornamos tanto el token como su fecha de expiración
+}
+
+async function validateToken(token) {
+    // Verifica si el token existe en la base de datos y no ha expirado
+    const [rows] = await pool.query(
+        'SELECT * FROM tokens WHERE token = ? AND expires_at > CONVERT_TZ(NOW(), @@global.time_zone, "America/Mexico_City")',
+        [token]
+    );
+
+    console.log(rows);  // Para depuración
+
+    if (rows.length === 0) {
+        return false;  // El token no es válido o ha expirado
+    }
+
+    return true;  // El token es válido
+}
+
+export const GetToken = async (req, res) => {
+    const { username, password } = req.body;  // Obtener usuario y contraseña del body
+    console.log(username, password);
+
+    try {
+        // Validar las credenciales del usuario con la base de datos
+        const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
+
+        // Si no se encuentra el usuario
+        if (rows.length === 0) {
+            return res.status(401).json({ message: 'Credenciales incorrectas' });
+        }
+
+        const user = rows[0];  // El primer usuario encontrado
+
+        // Comparar la contraseña proporcionada con la almacenada en la base de datos
+        const isPasswordValid = await bcrypt.compare(password, user.password);
+
+        if (!isPasswordValid) {
+            return res.status(401).json({ message: 'Credenciales incorrectas' });
+        }
+
+        // Si las credenciales son válidas, generar el token
+        const { token, expiresAt } = await createToken(user.id);  // Asegúrate de que createToken sea asíncrono si es necesario
+
+        // Respondemos con el token y la fecha de expiración
+        res.json({
+            message: 'Autenticación exitosa',
+            token,         // Token generado
+            expires_at: expiresAt, // Fecha de expiración del token
+        });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Error interno del servidor' });
+    }
+};
+
+async function hashPassword() {
+    const password = '&wN-xJJ3$4XXpKC';  // La contraseña que deseas cifrar
+    const saltRounds = 10;  // El número de rondas de sal (puedes ajustarlo si lo deseas)
+
+    // Cifrar la contraseña
+    const hashedPassword = await bcrypt.hash(password, saltRounds);
+
+    console.log('Hashed Password:', hashedPassword);
+}
+
+hashPassword();  // Llama a la función para cifrar la contraseña
