@@ -864,7 +864,7 @@ export async function GetCotID(req, res) {
                     modelo: data.modelo,
                     submarca: data.submarca,
                     cevic: data.cevic,
-                    "Prima Total": data.precio_cotizacion,
+                    Prima_Total: data.precio_cotizacion,
                     num_cotizacion: data.num_cotizacion,
                     placa: data.placa,
                     num_motor: data.num_motor,
