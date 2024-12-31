@@ -810,7 +810,6 @@ export const ActualizaLogsWS = async (id, successCount, errorCount, enviados) =>
 
 export async function GetCotID(req, res) {
     const { id } = req.params;  // Extraer el id de la solicitud
-    console.log(id);
 
     // Obtener la cabecera Authorization y extraer el token
     const authorization = req.headers.authorization;
@@ -819,11 +818,9 @@ export async function GetCotID(req, res) {
     if (!authorization) {
         return res.status(401).json({ message: 'Token no proporcionado' });
     }
-    console.log(authorization);
 
     // El token viene en formato 'Bearer <token>', lo extraemos
     const token = authorization.split(' ')[1]; // Obtener el token después de 'Bearer'
-    console.log(token);
 
     if (!token) {
         return res.status(401).json({ message: 'Token no proporcionado' });
@@ -841,8 +838,11 @@ export async function GetCotID(req, res) {
 
         // Llamar al procedimiento almacenado pasando el id como parámetro
         const [rows] = await pool.query('CALL FetchProspectID(?)', [id]);
-
-        if (rows.length > 0) {
+ 
+         // Verificar si rows tiene datos y si el primer registro tiene información válida
+         if (rows.length === 0 || !rows[0][0]) {
+             return res.status(404).json({ message: "El ID proporcionado no existe" });
+         }
             const data = rows[0][0];  // Acceder al primer resultado del procedimiento
 
             // Organizar los datos en diferentes secciones
@@ -882,15 +882,13 @@ export async function GetCotID(req, res) {
                     comentario: data.Comentario,
                     gclid: data.gclid,
                     utm: data.utm,
-                    fecha_creacion: data.fecha_creacion ? new Date(data.fecha_creacion).toLocaleString() : null,
-                    fecha_ultima_actualizacion: data.fecha_ultima_actualizacion ? new Date(data.fecha_ultima_actualizacion).toLocaleString() : null,
+                    creacionMexico: data.creacionMexico ? new Date(data.creacionMexico).toLocaleString() : null,
+                    ultima_actualizacionMexico: data.ultima_actualizacionMexico ? new Date(data.ultima_actualizacionMexico).toLocaleString() : null,
                 }
             };
 
             res.json(response);
-        } else {
-            res.json({ message: "No data found for the provided ID" });
-        }
+    
     } catch (error) {
         console.error(error);
         res.status(500).json({
@@ -899,6 +897,7 @@ export async function GetCotID(req, res) {
         });
     }
 }
+
 
 /// Solicitudes Viraal
 
@@ -988,10 +987,10 @@ return `${day}/${month}/${year}`;
 
 // Tokens
 
-const secretKey = 'your-secret-key';  // Cambia esto por una clave secreta fuerte
+const secretKey = 'rT6#uY@eF2!kH9mP3$w8jN4bL1VxKqZp0Tz';  // Cambia esto por una clave secreta fuerte
 
 // Función para crear un token
-async function createToken(userId) {
+async function createToken(userId, username) {
     const expiresIn = 30 * 60; // 30 minutos en segundos
     const token = jwt.sign({ userId }, secretKey, { expiresIn });
 
@@ -999,7 +998,7 @@ async function createToken(userId) {
     const expiresAt = moment().tz('America/Mexico_City').add(30, 'minutes').format('YYYY-MM-DD HH:mm:ss');  // Agregar 30 minutos y formatear como cadena
 
     // Guardar el token en la base de datos
-    await pool.query('INSERT INTO tokens (token, expires_at) VALUES (?, ?)', [token, expiresAt]);
+    await pool.query('INSERT INTO tokens (token, expires_at, users) VALUES (?, ?, ?)', [token, expiresAt, username]);
 
     console.log('Token generado:', token);
     console.log('Fecha de expiración:', expiresAt);
@@ -1014,8 +1013,6 @@ async function validateToken(token) {
         [token]
     );
 
-    console.log(rows);  // Para depuración
-
     if (rows.length === 0) {
         return false;  // El token no es válido o ha expirado
     }
@@ -1025,7 +1022,6 @@ async function validateToken(token) {
 
 export const GetToken = async (req, res) => {
     const { username, password } = req.body;  // Obtener usuario y contraseña del body
-    console.log(username, password);
 
     try {
         // Validar las credenciales del usuario con la base de datos
@@ -1046,7 +1042,7 @@ export const GetToken = async (req, res) => {
         }
 
         // Si las credenciales son válidas, generar el token
-        const { token, expiresAt } = await createToken(user.id);  // Asegúrate de que createToken sea asíncrono si es necesario
+        const { token, expiresAt } = await createToken(user.id, user.username);  // Asegúrate de que createToken sea asíncrono si es necesario
 
         // Respondemos con el token y la fecha de expiración
         res.json({
@@ -1070,4 +1066,4 @@ async function hashPassword() {
     console.log('Hashed Password:', hashedPassword);
 }
 
-hashPassword();  // Llama a la función para cifrar la contraseña
+//hashPassword();  // Llama a la función para cifrar la contraseña
