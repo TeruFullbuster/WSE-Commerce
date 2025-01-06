@@ -402,14 +402,15 @@ export const updateProspectoPaso3 = async (req, res) => {
     const { niv, no_motor, placa } = req.body;
     const paso = 4;
     console.log(req.body);
+    console.log(id);    
     try {
-        const [result] = await pool.query('UPDATE SesionesFantasma SET niv = ?, no_motor = ?, placa = ?, paso = ? WHERE id = ?', [niv, no_motor, placa, paso, id]);
+        const [result] = await pool.query('UPDATE SesionesFantasma SET niv = ?, num_motor = ?, placa = ?, paso = ? WHERE id = ?', [niv, no_motor, placa, paso, id]);
         if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
         return res.status(500).json({
-            message: 'Algo está mal'
+            message: 'Algo está mal '
         });
     }
 };
