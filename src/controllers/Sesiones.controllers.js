@@ -869,6 +869,7 @@ export async function GetCotID(req, res) {
                     num_cotizacion: data.num_cotizacion,
                     placa: data.placa,
                     num_motor: data.num_motor,
+                    Cotizacion_ID: data.idCotMAG
                 },
                 domicilio: {
                     codigo_postal: data.codigo_postal,
