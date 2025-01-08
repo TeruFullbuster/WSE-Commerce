@@ -855,16 +855,21 @@ export const GetCotID = async (req, res) => {
                 const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
 
                 // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
-                const descriptionResponse = await GetDescription(token, aseguradora, modelo, submarca, aseguradora);
+                const descriptionResponse = await GetDescription(token, data.marca, data.modelo, data.submarca, data.aseguradora);
+    
                 const descriptions = JSON.parse(descriptionResponse).response;
-                console.log(descriptions);
-                // Filtrar la descripción correspondiente al 'cevic' y obtenerla
-                const matchedDescription = descriptions.find(desc => desc.cevic === data.cevic);
-                console.log(matchedDescription);
-                if (matchedDescription) {
-                    finalDescripcion = matchedDescription.descripcion;
-                } else {
-                    finalDescripcion = "Descripción no encontrada";
+                // Iterar por las aseguradoras
+                for (const aseguradoraData of descriptions) {
+                    // Verificamos si la aseguradora coincide con la que tenemos
+                    if (aseguradoraData.aseguradora === data.aseguradora) {
+                        // Filtramos las descripciones que tengan el mismo 'cevic'
+                        const matchedDescription = aseguradoraData.descipciones.find(desc => desc.cevic === data.cevic);
+                        
+                        if (matchedDescription) {
+                            finalDescripcion = matchedDescription.descripcion;  // Asignamos la descripción correspondiente
+                            break;  // Si encontramos la descripción, no necesitamos seguir buscando
+                        }
+                    }
                 }
 
                 // Actualizar la base de datos con la descripción obtenida
@@ -1102,7 +1107,7 @@ async function hashPassword() {
 export const GetDescription = (token, marca, modelo, submarca, aseguradora ) => {
     const myHeaders = new Headers();
     myHeaders.append("Authorization", "Bearer " + token);
-
+    console.log(marca, modelo, submarca, aseguradora);
     const requestOptions = {
         method: "GET",
         headers: myHeaders,
