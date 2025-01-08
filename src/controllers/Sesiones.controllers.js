@@ -904,6 +904,10 @@ export const GetCotID = async (req, res) => {
                     num_motor: data.num_motor,
                     Cotizacion_ID: data.idCotMAG
                 },
+                Aseguradora:{
+                    Aseguradora: data.aseguradoracampana,
+                    idCia: data.aseguradoracampana
+                },
                 domicilio: {
                     codigo_postal: data.codigo_postal,
                     estado_residencia: data.estado_residencia,
