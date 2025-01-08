@@ -809,8 +809,9 @@ export const ActualizaLogsWS = async (id, successCount, errorCount, enviados) =>
     }
 }
 
-export async function GetCotID(req, res) {
+export const GetCotID = async (req, res) => {
     const { id } = req.params;  // Extraer el id de la solicitud
+    const { leadsource, aseguradora, aseguradoracampana, descripcion, cvic, idCotMAG, marca, modelo, submarca } = req.body; // Agregar los nuevos parámetros
 
     // Obtener la cabecera Authorization y extraer el token
     const authorization = req.headers.authorization;
@@ -820,9 +821,8 @@ export async function GetCotID(req, res) {
         return res.status(401).json({ message: 'Token no proporcionado' });
     }
 
-    // El token viene en formato 'Bearer <token>', lo extraemos
     const token = authorization.split(' ')[1]; // Obtener el token después de 'Bearer'
-
+   
     if (!token) {
         return res.status(401).json({ message: 'Token no proporcionado' });
     }
@@ -844,7 +844,32 @@ export async function GetCotID(req, res) {
          if (rows.length === 0 || !rows[0][0]) {
              return res.status(404).json({ message: "El ID proporcionado no existe" });
          }
+
             const data = rows[0][0];  // Acceder al primer resultado del procedimiento
+
+            // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
+            let finalDescripcion = data.descripcion;
+            if (!data.descripcion && data.cevic) {
+                // Obtener el token y buscar la descripción a través de la API
+                const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
+                const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
+
+                // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
+                const descriptionResponse = await GetDescription(token, aseguradora, modelo, submarca, aseguradora);
+                const descriptions = JSON.parse(descriptionResponse).response;
+                console.log(descriptions);
+                // Filtrar la descripción correspondiente al 'cevic' y obtenerla
+                const matchedDescription = descriptions.find(desc => desc.cevic === data.cevic);
+                console.log(matchedDescription);
+                if (matchedDescription) {
+                    finalDescripcion = matchedDescription.descripcion;
+                } else {
+                    finalDescripcion = "Descripción no encontrada";
+                }
+
+                // Actualizar la base de datos con la descripción obtenida
+                await pool.query('UPDATE SesionesFantasma SET descripcion = ? WHERE id = ?', [finalDescripcion, id]);
+            }
 
             // Organizar los datos en diferentes secciones
             const response = {
@@ -855,17 +880,19 @@ export async function GetCotID(req, res) {
                     segundo_nombre: data.segundo_nombre,
                     apellido_paterno: data.apellido_paterno,
                     apellido_materno: data.apellido_materno,
+                    genero: data.genero,
                     telefono: data.telefono,
                     correo: data.correo,
                     edad: data.edad ? new Date(data.edad).toLocaleDateString() : null,
                     rfc: data.rfc,
+
                 },
                 vehiculo: {
                     marca: data.marca,
                     modelo: data.modelo,
                     submarca: data.submarca,
                     cevic: data.cevic,
-                    descripcion: data.descripcion,
+                    descripcion: finalDescripcion,  // Aquí usamos la descripcion final que puede ser obtenida o no desde la API
                     Prima_Total: data.precio_cotizacion,
                     num_cotizacion: data.num_cotizacion,
                     placa: data.placa,
@@ -899,8 +926,7 @@ export async function GetCotID(req, res) {
             error: error.message
         });
     }
-}
-
+};
 
 /// Solicitudes Viraal
 
@@ -1070,3 +1096,56 @@ async function hashPassword() {
 }
 
 //hashPassword();  // Llama a la función para cifrar la contraseña
+
+// Get Description => Cevic
+
+export const GetDescription = (token, marca, modelo, submarca, aseguradora ) => {
+    const myHeaders = new Headers();
+    myHeaders.append("Authorization", "Bearer " + token);
+
+    const requestOptions = {
+        method: "GET",
+        headers: myHeaders,
+        redirect: "follow"
+    };
+
+    return fetch(`https://apis.segurointeligente.mx/api/Catalogos/GetCevic?Marca=${marca}&Modelo=${modelo}&Des=${submarca}`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+            // Puedes retornar el resultado si deseas usarlo en el .then() posterior
+            return result;
+        })
+        .catch((error) => {
+            console.error(error);
+            throw error;  // Lanza el error para manejarlo fuera de la función si es necesario
+        });
+};
+
+
+export const GetTokenMAG = () => {
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+
+    const raw = JSON.stringify({
+        "usuario": "RPA",
+        "contrasena": "Gmag2023*"
+    });
+
+    const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+    };
+
+    return fetch("https://apis.segurointeligente.mx/api/Autenticacion/GetToken", requestOptions)
+        .then((response) => response.json())
+        .then((result) => {
+            // Puedes retornar el resultado si deseas usarlo en el .then() posterior
+            return result;
+        })
+        .catch((error) => {
+            console.error(error);
+            throw error;  // Lanza el error para manejarlo fuera de la función si es necesario
+        });
+};
