@@ -415,22 +415,64 @@ export const updateProspectoPaso3 = async (req, res) => {
     }
 };
 
-// Paso 4: Actualizar Lead ID CPY
+// Paso 4: Actualizar Lead ID CPY y los nuevos campos
 export const updateProspectoPaso4 = async (req, res) => {
     const { id } = req.params;
-    const { leadidcpy } = req.body;
-    try {
-        const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ? WHERE id = ?', [leadidcpy, id]);
-        if (result.affectedRows === 0) return { message: 'Prospecto no encontrado' };
+    const { leadidcpy, leadsource, Comentario, Banco, tTarjeta, ResponseMAGAPI } = req.body;
 
-        return { message: 'Prospecto actualizado exitosamente' };
+    // Verificar si leadidcpy está vacío o no está presente
+    const leadidcpyValue = leadidcpy ? leadidcpy : null; // Si no viene, asigna null
+
+    try {
+        // Actualizamos los datos del prospecto, considerando que leadidcpy puede ser null
+        const [result] = await pool.query(
+            `UPDATE SesionesFantasma 
+            SET 
+                LeadidCPY = ?, 
+                leadsource = ?, 
+                Comentario = ?, 
+                Banco = ?, 
+                tTarjeta = ?, 
+                iddocto = ?, 
+                documento = ?, 
+                url = ?, 
+                isPoliza = ?, 
+                isCobro = ?, 
+                isError = ?, 
+                error = ?, 
+                isUrlCobro = ?, 
+                urlCobro = ? 
+            WHERE id = ?`, 
+            [
+                leadidcpyValue,  // Usamos leadidcpyValue, que será null si no se pasa
+                leadsource,
+                Comentario,
+                Banco,
+                tTarjeta,
+                ResponseMAGAPI.iddocto, 
+                ResponseMAGAPI.documento, 
+                ResponseMAGAPI.url, 
+                ResponseMAGAPI.isPoliza, 
+                ResponseMAGAPI.isCobro, 
+                ResponseMAGAPI.isError, 
+                ResponseMAGAPI.error, 
+                ResponseMAGAPI.isUrlCobro, 
+                ResponseMAGAPI.urlCobro,
+                id
+            ]
+        );
+
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+
+        return res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
-        return {
+        return res.status(500).json({
             message: 'Algo está mal',
-            error
-        };
+            error: error.message
+        });
     }
 };
+
 
 export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
     try {
@@ -811,7 +853,6 @@ export const ActualizaLogsWS = async (id, successCount, errorCount, enviados) =>
 
 export const GetCotID = async (req, res) => {
     const { id } = req.params;  // Extraer el id de la solicitud
-    const { leadsource, aseguradora, aseguradoracampana, descripcion, cvic, idCotMAG, marca, modelo, submarca } = req.body; // Agregar los nuevos parámetros
 
     // Obtener la cabecera Authorization y extraer el token
     const authorization = req.headers.authorization;
@@ -849,6 +890,8 @@ export const GetCotID = async (req, res) => {
 
             // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
             let finalDescripcion = data.descripcion;
+            let idCIA = data.idCIA;  // Aquí guardamos idCIA desde la base de datos al principio
+
             if (!data.descripcion && data.cevic) {
                 // Obtener el token y buscar la descripción a través de la API
                 const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
@@ -876,6 +919,47 @@ export const GetCotID = async (req, res) => {
                 await pool.query('UPDATE SesionesFantasma SET descripcion = ? WHERE id = ?', [finalDescripcion, id]);
             }
 
+            // Verificar si necesitamos obtener el idCIA si no está disponible
+            if (!idCIA) {
+                // Obtener el token y buscar la aseguradora para obtener el idCIA
+                const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
+                const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
+                
+                // Llamar a la API para obtener las aseguradoras
+                const aseguradorasgenerales = await GetAseg(token);
+                
+                // Parsear la respuesta y buscar la aseguradora
+                const aseguradorasresponse = JSON.parse(aseguradorasgenerales).response;
+                
+                // Buscar la aseguradora en la respuesta usando el nombre de la aseguradora
+                const aseguradora = aseguradorasresponse.find(aseguradora => aseguradora.nombre === data.aseguradoracampana);
+                
+                // Verificar la aseguradora y asignar el idCIA
+                if (aseguradora) {
+                    idCIA = aseguradora.id;  // Asignamos el id de la aseguradora
+                } else {
+                    idCIA = "Aseguradora no encontrada";  // Si no se encuentra la aseguradora
+                }
+
+                // Actualizar la base de datos con el idCIA obtenido
+                await pool.query('UPDATE SesionesFantasma SET idCIA = ? WHERE id = ?', [idCIA, id]);
+            }
+            
+            //Armamos datos para recotizacion
+
+           // Obtener el token y buscar la descripción a través de la API
+            const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
+            const tokenMAG = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
+
+            // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
+            const descriptionResponse = await GetDescription(tokenMAG, data.marca, data.modelo, data.submarca, data.aseguradora);
+
+            // Parsear la respuesta para acceder a las descripciones
+            const descriptions = JSON.parse(descriptionResponse).response;
+
+            // Filtrar las descripciones por aseguradora
+            const filteredDescriptions = descriptions.filter(aseguradoraData => aseguradoraData.aseguradora === data.aseguradora);
+
             // Organizar los datos en diferentes secciones
             const response = {
                 message: "OK",
@@ -890,7 +974,6 @@ export const GetCotID = async (req, res) => {
                     correo: data.correo,
                     edad: data.edad ? new Date(data.edad).toLocaleDateString() : null,
                     rfc: data.rfc,
-
                 },
                 vehiculo: {
                     marca: data.marca,
@@ -906,7 +989,9 @@ export const GetCotID = async (req, res) => {
                 },
                 Aseguradora:{
                     Aseguradora: data.aseguradoracampana,
-                    idCia: data.aseguradoracampana
+                    idCia: idCIA,
+                    "Grupo": data.idGrupo,
+                    "Versiones": filteredDescriptions
                 },
                 domicilio: {
                     codigo_postal: data.codigo_postal,
@@ -1149,6 +1234,27 @@ export const GetTokenMAG = () => {
 
     return fetch("https://apis.segurointeligente.mx/api/Autenticacion/GetToken", requestOptions)
         .then((response) => response.json())
+        .then((result) => {
+            // Puedes retornar el resultado si deseas usarlo en el .then() posterior
+            return result;
+        })
+        .catch((error) => {
+            console.error(error);
+            throw error;  // Lanza el error para manejarlo fuera de la función si es necesario
+        });
+};
+
+export const GetAseg = (token) => {
+    const myHeaders = new Headers();
+    myHeaders.append("Authorization", "Bearer " + token);
+    const requestOptions = {
+        method: "GET",
+        headers: myHeaders,
+        redirect: "follow"
+    };
+
+    return fetch(`https://apis.segurointeligente.mx/api/OTGenerica/CIA`, requestOptions)
+        .then((response) => response.text())
         .then((result) => {
             // Puedes retornar el resultado si deseas usarlo en el .then() posterior
             return result;
