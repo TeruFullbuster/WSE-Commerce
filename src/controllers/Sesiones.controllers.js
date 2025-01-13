@@ -485,6 +485,43 @@ export const updateProspectoPaso4 = async (req, res) => {
     }
 };
 
+// Paso 4: Actualizar Lead ID CPY y los nuevos campos
+export const updateProspectoRecotiza = async (req, res) => {
+    const { id } = req.params;
+    const { cevic, edad, idCot, precio_cotizacion, descripcion } = req.body;
+
+    try {
+        // Actualizamos los datos del prospecto, considerando que leadidcpy puede ser null
+        const [result] = await pool.query(
+            `UPDATE SesionesFantasma 
+            SET 
+                cevic = ?, 
+                edad = ?, 
+                idCot = ?, 
+                precio_cotizacion = ?, 
+                descripcion = ?
+            WHERE id = ?`, 
+            [   
+                cevic,
+                descripcion,
+                edad,
+                idCot,
+                precio_cotizacion,
+                descripcion,
+                id
+            ]
+        );
+
+        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+
+        return res.json({ message: 'Prospecto actualizado exitosamente' });
+    } catch (error) {
+        return res.status(500).json({
+            message: 'Algo está mal',
+            error: error.message
+        });
+    }
+};
 
 export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
     try {
