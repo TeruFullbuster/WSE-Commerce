@@ -170,7 +170,7 @@ const ObtenerResource = (Origen) =>{
 }
 
 export const createProspecto = async (req, res) => {
-    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource, aseguradoraCampana, firstPage, isComparator } = req.body;
+    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource, aseguradoraCampana, firstPage, isComparator, idGrupo } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
 
@@ -191,6 +191,12 @@ export const createProspecto = async (req, res) => {
         if (isComparator && isComparator.trim() !== '') {
             query += ', isComparator'; // Añadir isComparator al query
             values.push(isComparator);  // Añadir isComparator al array de valores
+        }
+
+        // Solo agregar idGrupo si está presente y no es vacía
+        if (idGrupo && idGrupo.trim() !== '') {
+            query += ', idGrupo'; // Añadir idGrupo al query
+            values.push(idGrupo);  // Añadir idGrupo al array de valores
         }
 
         // Cerrar la parte de columnas y añadir los placeholders para los valores
@@ -952,19 +958,23 @@ export const GetCotID = async (req, res) => {
             }
             
             //Armamos datos para recotizacion
+            let Descriptiones = [];
+            if (data.isComparator === "1") {
+                console.log("Recotizando");
+                // Obtener el token y buscar la descripción a través de la API
+                const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
+                const tokenMAG = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
 
-           // Obtener el token y buscar la descripción a través de la API
-            const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
-            const tokenMAG = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
+                // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
+                const descriptionResponse = await GetDescription(tokenMAG, data.marca, data.modelo, data.submarca, data.aseguradora);
 
-            // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
-            const descriptionResponse = await GetDescription(tokenMAG, data.marca, data.modelo, data.submarca, data.aseguradora);
+                // Parsear la respuesta para acceder a las descripciones
+                const descriptions = JSON.parse(descriptionResponse).response;
 
-            // Parsear la respuesta para acceder a las descripciones
-            const descriptions = JSON.parse(descriptionResponse).response;
-
-            // Filtrar las descripciones por aseguradora
-            const filteredDescriptions = descriptions.filter(aseguradoraData => aseguradoraData.aseguradora === data.aseguradora);
+                // Filtrar las descripciones por aseguradora
+                const filteredDescriptions = descriptions.filter(aseguradoraData => aseguradoraData.aseguradora === data.aseguradora);
+                Descriptiones = filteredDescriptions;
+            }
 
             // Organizar los datos en diferentes secciones
             const response = {
@@ -996,8 +1006,9 @@ export const GetCotID = async (req, res) => {
                 Aseguradora:{
                     Aseguradora: data.aseguradoracampana,
                     idCia: idCIA,
+                    "isComparator": data.isComparator,
                     "Grupo": data.idGrupo,
-                    "Versiones": filteredDescriptions
+                    "Versiones": Descriptiones
                 },
                 domicilio: {
                     codigo_postal: data.codigo_postal,
