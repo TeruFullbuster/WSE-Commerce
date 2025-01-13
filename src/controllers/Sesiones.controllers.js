@@ -170,7 +170,7 @@ const ObtenerResource = (Origen) =>{
 }
 
 export const createProspecto = async (req, res) => {
-    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource, aseguradoraCampana, firstPage } = req.body;
+    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource, aseguradoraCampana, firstPage, isComparator } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
 
@@ -178,13 +178,19 @@ export const createProspecto = async (req, res) => {
 
     try {
         // Construir la consulta SQL dinámicamente
-        let query = 'INSERT INTO SesionesFantasma (marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoracampana, firstPage';
-        let values = [marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana || '', firstPage];
+        let query = 'INSERT INTO SesionesFantasma (marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoracampana, firstPage, isComparator' ;
+        let values = [marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana || '', firstPage, isComparator];
 
         // Solo agregar descripcion si está presente y no es vacía
         if (descripcion && descripcion.trim() !== '') {
             query += ', descripcion'; // Añadir descripcion al query
             values.push(descripcion);  // Añadir descripcion al array de valores
+        }
+
+        // Solo agregar isComparator si está presente y no es vacía
+        if (isComparator && isComparator.trim() !== '') {
+            query += ', isComparator'; // Añadir isComparator al query
+            values.push(isComparator);  // Añadir isComparator al array de valores
         }
 
         // Cerrar la parte de columnas y añadir los placeholders para los valores
@@ -953,7 +959,7 @@ export const GetCotID = async (req, res) => {
 
             // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
             const descriptionResponse = await GetDescription(tokenMAG, data.marca, data.modelo, data.submarca, data.aseguradora);
-            
+
             // Parsear la respuesta para acceder a las descripciones
             const descriptions = JSON.parse(descriptionResponse).response;
 
