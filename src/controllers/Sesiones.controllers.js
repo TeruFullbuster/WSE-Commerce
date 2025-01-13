@@ -953,7 +953,7 @@ export const GetCotID = async (req, res) => {
 
             // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
             const descriptionResponse = await GetDescription(tokenMAG, data.marca, data.modelo, data.submarca, data.aseguradora);
-
+            
             // Parsear la respuesta para acceder a las descripciones
             const descriptions = JSON.parse(descriptionResponse).response;
 
