@@ -488,7 +488,7 @@ export const updateProspectoPaso4 = async (req, res) => {
 // Paso 4: Actualizar Lead ID CPY y los nuevos campos
 export const updateProspectoRecotiza = async (req, res) => {
     const { id } = req.params;
-    const { cevic, edad, idCot, precio_cotizacion, descripcion } = req.body;
+    const { cevic, edad, idCotMAG, precio_cotizacion, descripcion } = req.body;
 
     try {
         // Actualizamos los datos del prospecto, considerando que leadidcpy puede ser null
@@ -497,15 +497,14 @@ export const updateProspectoRecotiza = async (req, res) => {
             SET 
                 cevic = ?, 
                 edad = ?, 
-                idCot = ?, 
+                idCotMAG = ?, 
                 precio_cotizacion = ?, 
                 descripcion = ?
             WHERE id = ?`, 
             [   
                 cevic,
-                descripcion,
                 edad,
-                idCot,
+                idCotMAG,
                 precio_cotizacion,
                 descripcion,
                 id

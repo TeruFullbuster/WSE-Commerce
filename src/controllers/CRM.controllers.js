@@ -76,30 +76,107 @@ export const createCE = async (req, res) => {
   }
 };
 
-
-console.log('Prueba')
-
-console.log('otra vez')
-
-
-// Notificación Diaria Leads Sin Tocar
+// Notificación Diaria: Leads Sin Tocar
 export const NotificacionDiariaLeads = async (req, res) => {
-  const token = "1000.4e583952317913bf362a9b12097bb073.ba2f2cb8e47ad548ddce16a9d1630d9b";  // Reemplaza con tu token real
-  const fechasI = "2025-01-01T00:00:00+00:00";  // Fecha de inicio
-  const fechasF = "2025-01-13T23:59:59+00:00";  // Fecha de fin
+  const { TipoNotificacion, NotificarMail } = req.body;
+
+  // Calcular las fechas según TipoNotificacion
+  let fechaInicio, fechaFin;
+
+  const currentDate = moment().tz('America/Mexico_City'); // Fecha y hora actual en CDMX
+  const startOfMonth = currentDate.clone().startOf('month'); // Primer día del mes
+  const endOfMonth = currentDate.clone().endOf('month'); // Último día del mes
+
+  if (TipoNotificacion === "Inicial") {
+    // TipoNotificacion "Inicial": 8:00 PM del día anterior hasta 8:00 AM de hoy
+    fechaInicio = currentDate.clone().set({ hour: 20, minute: 0, second: 0, millisecond: 0 }).subtract(1, 'days');
+    fechaFin = currentDate.clone().set({ hour: 8, minute: 0, second: 0, millisecond: 0 });
+  } else if (TipoNotificacion === "Final") {
+    // TipoNotificacion "Final": 8:00 AM de hoy hasta 8:00 PM de hoy
+    fechaInicio = currentDate.clone().set({ hour: 8, minute: 0, second: 0, millisecond: 0 });
+    fechaFin = currentDate.clone().set({ hour: 20, minute: 0, second: 0, millisecond: 0 });
+  } else if (TipoNotificacion === "Historico") {
+    // TipoNotificacion "Historico": Todos los leads desde el inicio del mes hasta el final del mes
+    fechaInicio = startOfMonth;
+    fechaFin = endOfMonth;
+  } else {
+    // Si el TipoNotificacion no es válido, retornamos un error
+    return res.status(400).json({ message: "TipoNotificacion inválido" });
+  }
+
+  console.log(`Fechas calculadas: ${fechaInicio.format()} - ${fechaFin.format()}`);
+
+  // Usar la función para obtener el token
+  const token = "1000.00cba2e09d69d8bdf32aba2930bd04a7.8ee5bb4e54266af969cc926f34c22859"; //await GetTokenZOHO();
+  console.log(token); // Imprime el access_token
 
   try {
     // Llamada a la función getLeads para obtener los leads dentro de las fechas
-    const informacion = await getLeads(token, fechasI, fechasF);
+    const informacion = await getLeads(token);
     const leads = informacion.detallesSinTocar || [];  // Leads con "Sin Tocar"
-
+    console.log(leads[0].firstPage);  // Mostrar los leads obtenidos
     // Inicializamos el objeto para agrupar por ramo
     const agrupadoPorRamos = {};
+    const historicoLeads = {};  // Para almacenar los leads históricos
+    const leadsEcommerce = []; // Para almacenar los leads que han evolucionado a E-COMMERCE
+    let totalGeneral = { total: 0, SEM: 0, SEO: 0, FBK: 0, otros: 0 };
 
-    // Iteramos por los leads para agruparlos por ramo y luego por fuente
-    leads.forEach(lead => {
-      const ramo = lead.Ramo || "Otros";  // Si no hay ramo, se asigna "Otros"
-      const leadSource = lead.Lead_Source || "";  // Obtenemos el campo Lead_Source
+    // Filtramos los leads según el rango de fechas
+    const leadsFiltrados = leads.filter(lead => {
+      const createdTime = moment(lead.Created_Time); // Convertir Created_Time a objeto moment
+      return createdTime.isBetween(fechaInicio, fechaFin, null, '[]');  // Comparar si está entre las fechas
+    });
+
+    // Filtramos todos los leads del mes (históricos)
+    const leadsHistoricos = leads.filter(lead => {
+      const createdTime = moment(lead.Created_Time);
+      return createdTime.isBetween(startOfMonth, endOfMonth, null, '[]');
+    });
+
+    // Llenamos los datos históricos
+    historicoLeads.total = leadsHistoricos.length;
+    historicoLeads.SEM = leadsHistoricos.filter(lead => lead.Lead_Source.endsWith("SEM")).length;
+    historicoLeads.SEO = leadsHistoricos.filter(lead => lead.Lead_Source.includes("SEO")).length;
+    historicoLeads.FBK = leadsHistoricos.filter(lead => lead.Lead_Source.includes("FBK")).length;
+    historicoLeads.otros = leadsHistoricos.filter(lead => !lead.Lead_Source.includes("SEM") && !lead.Lead_Source.includes("SEO") && !lead.Lead_Source.includes("FBK")).length;
+
+    // Iteramos por los leads filtrados para agruparlos por ramo y luego por fuente
+    leadsFiltrados.forEach(lead => {
+      let ramo = lead.Ramo || "Otros";  // Si no hay ramo, se asigna "Otros"
+      let leadSource = lead.Lead_Source || "";  // Obtenemos el campo Lead_Source
+      let estrategia = ""; // Campo estrategia que asignaremos según el caso
+
+      // Verificamos si el lead pertenece a una URL de E-COMMERCE, para asociarlo con SEM, SEO o FBK
+      if (landingPages.SEM.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
+        estrategia = "SEM";
+        lead.estrategia = estrategia;  // Asignamos la estrategia al lead
+        leadsEcommerce.push(lead);  // Agregamos a la lista de E-COMMERCE
+      } else if (landingPages.SEO.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
+        estrategia = "SEO";
+        lead.estrategia = estrategia;  // Asignamos la estrategia al lead
+        leadsEcommerce.push(lead);  // Agregamos a la lista de E-COMMERCE
+      } else if (landingPages.FBK.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
+        estrategia = "FBK";
+        lead.estrategia = estrategia;  // Asignamos la estrategia al lead
+        leadsEcommerce.push(lead);  // Agregamos a la lista de E-COMMERCE
+      } else {
+        // Si no es E-commerce, asignamos la estrategia normal según el Lead_Source
+        if (leadSource.endsWith("SEM")) {
+          estrategia = "SEM";
+        } else if (leadSource.includes("SEO") || leadSource.includes("Blog")) {
+          estrategia = "SEO";
+        } else if (leadSource.includes("FBK")) {
+          estrategia = "FBK";
+        } else {
+          estrategia = "Otros";
+        }
+        lead.estrategia = estrategia; // Asignamos la estrategia normal al lead
+      }
+
+      // Si el Lead_Source es "LP-GYA", lo agrupamos bajo Asociados
+      if (leadSource === "LP-GYA") {
+        ramo = "Asociados - Galindo";
+      }
 
       // Inicializamos la estructura del ramo si no existe
       if (!agrupadoPorRamos[ramo]) {
@@ -115,14 +192,19 @@ export const NotificacionDiariaLeads = async (req, res) => {
 
       // Contabilizamos los leads por fuente
       agrupadoPorRamos[ramo].total++;
-      if (leadSource.endsWith("SEM")) {
+      totalGeneral.total++;  // Sumamos al total general
+      if (estrategia === "SEM") {
         agrupadoPorRamos[ramo].SEM++;
-      } else if (leadSource.includes("SEO")) {
+        totalGeneral.SEM++;
+      } else if (estrategia === "SEO") {
         agrupadoPorRamos[ramo].SEO++;
-      } else if (leadSource.includes("FBK")) {
+        totalGeneral.SEO++;
+      } else if (estrategia === "FBK") {
         agrupadoPorRamos[ramo].FBK++;
+        totalGeneral.FBK++;
       } else {
         agrupadoPorRamos[ramo].otros++;
+        totalGeneral.otros++;
       }
 
       // Añadimos el lead a la lista del ramo correspondiente
@@ -132,20 +214,25 @@ export const NotificacionDiariaLeads = async (req, res) => {
         Estatus_Lead_Prospecto: lead.Estatus_Lead_Prospecto,
         Telefono: lead.Mobile,
         Created_Time: lead.Created_Time,
-        Lead_Source: lead.Lead_Source || "N/A",
-        MKT_Campaigns: lead.MKT_Campaigns || "N/A"
+        Lead_Source: leadSource || "N/A",
+        MKT_Campaigns: lead.MKT_Campaigns || "N/A",
+        estrategia: lead.estrategia || "N/A", // Añadimos el campo de estrategia
+        firstPage: lead.firstPage || "N/A"
       });
     });
 
     // Crear el objeto de respuesta con la información organizada por ramos
     const response = {
       message: "Notificación enviada",
-      total: leads.length,   // Total de registros encontrados
-      agrupadoPorRamos: agrupadoPorRamos  // Ramo agrupado con leads y cantidades
+      total: leadsFiltrados.length,   // Total de registros encontrados
+      totalGeneral: totalGeneral,  // Agregar el total general
+      agrupadoPorRamos: agrupadoPorRamos,  // Ramo agrupado con leads y cantidades
+      historicoLeads: historicoLeads,  // Leads históricos
+      leadsEcommerce: leadsEcommerce  // Leads de E-Commerce
     };
-
+    console.log(leadsEcommerce);
     // Llamada para enviar el correo con el cuerpo y los detalles
-    await enviarCorreo(response);  // Enviar los detalles al correo
+    await enviarCorreo(response, NotificarMail, TipoNotificacion);  // Enviar los detalles al correo
 
     // Retornamos la respuesta organizada
     res.status(200).json(response);
@@ -158,54 +245,75 @@ export const NotificacionDiariaLeads = async (req, res) => {
   }
 };
 
-async function getLeads(token, fechasI, fechasF) {
+
+const fetchAllLeads = async (url, myHeaders) => {
+  let allLeads = [];
+  let hasNextPage = true;
+  let nextPageToken = '';
+
+  // Mientras haya más páginas
+  while (hasNextPage) {
+    let requestUrl = url;
+    if (nextPageToken) {
+      requestUrl += `&page_token=${nextPageToken}`;  // Añadir el token de la siguiente página
+    }
+
+    try {
+      const response = await fetch(requestUrl, {
+        method: "GET",
+        headers: myHeaders,
+        redirect: "follow"
+      });
+
+      // Obtenemos la respuesta y la convertimos en JSON
+      const result = await response.json();
+
+      // Agregamos los leads a la lista total
+      allLeads = allLeads.concat(result.data);
+
+      // Verificamos si hay más registros
+      hasNextPage = result.info.more_records;
+
+      // Si hay más páginas, actualizamos el token para la siguiente solicitud
+      nextPageToken = result.info.next_page_token;
+    } catch (error) {
+      console.error("Error en la solicitud de la API:", error);
+      break;
+    }
+  }
+
+  return allLeads;  // Regresamos todos los leads combinados
+};
+
+// Función para obtener leads
+async function getLeads(token) {
   const myHeaders = new Headers();
   myHeaders.append("Authorization", `Zoho-oauthtoken ${token}`);
   myHeaders.append("Accept", "application/json");  // Cambié a JSON, ya que estás trabajando con objetos en formato JSON
   myHeaders.append("Cookie", "_zcsr_tmp=5cd7c811-88f6-4f4e-8316-ff6df3d261c1; crmcsr=5cd7c811-88f6-4f4e-8316-ff6df3d261c1; group_name=usergroup2; zalb_1a99390653=47948cd9e3fe72a2701dbc53294d291e");
 
-  const requestOptions = {
-    method: "GET",
-    headers: myHeaders,
-    redirect: "follow"
+  // Crear la URL con las fechas dinámicamente
+  const url = `https://www.zohoapis.com/crm/v7/Leads?cvid=2731176000504916665`;
+
+  // Obtenemos todos los leads
+  const leads = await fetchAllLeads(url, myHeaders);
+
+  // Filtrar los leads "Sin Tocar"
+  const sinTocar = leads.filter(lead => lead.Estatus_Lead_Prospecto === "Sin Tocar");
+  const otrosStatus = leads.filter(lead => lead.Estatus_Lead_Prospecto !== "Sin Tocar");
+
+  // Resultado final con los detalles
+  const responseJson = {
+    message: "OK",
+    cantidadSinTocar: sinTocar.length,
+    cantidadOtros: otrosStatus.length,
+    detallesSinTocar: sinTocar,
+    detallesOtros: otrosStatus
   };
 
-  try {
-    // Crear la URL con las fechas dinámicamente
-    const url = `https://www.zohoapis.com/crm/v7/Leads/search?criteria=Created_Time%3Abetween%3A${encodeURIComponent(fechasI)}%2C${encodeURIComponent(fechasF)}`;
-
-    // Usamos await para esperar la respuesta de la API
-    const response = await fetch(url, requestOptions);
-    
-    // Convertimos la respuesta a JSON
-    const result = await response.json();
-
-    // Filtramos y contamos los registros
-    const leads = result.data || [];  // Suponiendo que la respuesta contiene los leads en 'data'
-
-    // Filtrar y contar los "Sin Tocar"
-    const sinTocar = leads.filter(lead => lead.Estatus_Lead_Prospecto === "Sin Tocar");
-    const otrosStatus = leads.filter(lead => lead.Estatus_Lead_Prospecto !== "Sin Tocar");
-
-    // Resultados que deseas retornar
-    const responseJson = {
-      message: "OK",
-      cantidadSinTocar: sinTocar.length,
-      cantidadOtros: otrosStatus.length,
-      detallesSinTocar: sinTocar,
-      detallesOtros: otrosStatus
-    };
-
-    return responseJson;  // O devolverlo como respuesta en la API
-
-  } catch (error) {
-    console.error(error);
-    return {
-      message: "Error",
-      error: error.message
-    };
-  }
+  return responseJson;  // Regresar el JSON con los detalles
 }
+
 
 // Correo para notificación
 const transporter = nodemailer.createTransport({
@@ -219,12 +327,28 @@ const transporter = nodemailer.createTransport({
 });
 
 // Función para enviar correo
-const enviarCorreo = async (response) => {
+const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
+  // Convertir el valor de NotificarMail a booleano
+  NotificarMail = NotificarMail === "True" || NotificarMail === true;
+
   const currentTimeCDMX = moment().tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss');
-  const subject = "Notificación de Leads Sin Tocar";  // Asunto del correo
+  // Asignar el asunto según el tipo de notificación
+  let subject = "Notificación de Leads Sin Tocar";
 
-  const { agrupadoPorRamos } = response;
+  // Condicional para modificar el asunto según el tipo de notificación
+  if (TipoNotificacion === "Inicial") {
+    subject += " Apertura";  // Si es "Inicial", se agrega "Apertura"
+  } else if (TipoNotificacion === "Final") {
+    subject += " Cierre";  // Si es "Final", se agrega "Cierre"
+  } else if (TipoNotificacion === "Historico") {
+    subject += " Histórico";  // Si es "Historico", se agrega "Histórico"
+  }
+  console.log(NotificarMail);  // Verificar el valor booleano de NotificarMail
 
+  const { agrupadoPorRamos, totalGeneral, historicoLeads, leadsEcommerce } = response;
+  console.log(totalGeneral);  // Mostrar el total general de leads
+  console.log(leadsEcommerce);  // Mostrar los leads leadsEcommerce
+  console.log(leadsEcommerce.length);  // Mostrar la cantidad de leads E-COMMERCE
   // Crear el contenido HTML del correo
   let htmlContent = `
     <html lang="es">
@@ -237,23 +361,43 @@ const enviarCorreo = async (response) => {
           .container { background-color: #ffffff; padding: 20px; }
           h1 { color: #3498db; text-align: center; }
           .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          .table th, .table td { padding: 8px; text-align: left; border-bottom: 1px solid #ddd; }
+          .table th, .table td { padding: 8px; text-align: center; border: 1px solid #ddd; }
           .summary { font-size: 18px; margin-bottom: 20px; }
+          .total { font-weight: bold; font-size: 24px; color: #e74c3c; }
         </style>
       </head>
       <body>
         <div class="container">
-          <h1>Notificación de Leads Sin Tocar</h1>
+          <h1>${subject}</h1>
           <p><strong>Fecha de Envío:</strong> ${currentTimeCDMX}</p>
-          
-          <!-- Resumen por Ramo -->
-          <div class="summary">
-            <p><strong>Total de Leads Sin Tocar:</strong> ${response.total}</p>
-            <h3>Resumen por Ramo:</h3>
-            <table class="table">
-              <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
 
-  // Agregar los resúmenes por ramo
+          <!-- Resumen de Leads Sin Tocar del Día -->
+          <h3>Total de Leads Sin Tocar (Día): <span class="total">${response.total}</span></h3>
+          <table class="table">
+            <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+
+  // Agregar los resúmenes por ramo para el día
+  for (const ramo in agrupadoPorRamos) {
+    const ramoData = agrupadoPorRamos[ramo];
+    htmlContent += `
+      <tr>
+        <td>${ramo}</td>
+        <td>${ramoData.total}</td>
+        <td>${ramoData.SEM}</td>
+        <td>${ramoData.SEO}</td>
+        <td>${ramoData.FBK}</td>
+        <td>${ramoData.otros}</td>
+      </tr>`;
+  }
+  
+  htmlContent += `</table>`;
+
+  // Resumen Histórico de Leads Sin Tocar
+  htmlContent += `<h3>Total de Leads Sin Tocar Histórico (Mes): <span class="total">${historicoLeads.total}</span></h3>
+    <table class="table">
+      <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+
+  // Agregar los resúmenes por ramo históricos
   for (const ramo in agrupadoPorRamos) {
     const ramoData = agrupadoPorRamos[ramo];
     htmlContent += `
@@ -267,43 +411,169 @@ const enviarCorreo = async (response) => {
       </tr>`;
   }
 
-  htmlContent += `</table></div>`;  // Cerrar resumen por ramo
+  htmlContent += `</table>`;
 
-  // Desglose Completo de los Leads
-  htmlContent += `<h3>Detalles de los Leads Sin Tocar:</h3>`;
+  // E-commerce: Resumen por Estrategia (Si existen Leads de E-commerce)
+  if (leadsEcommerce.length > 0) {
+    htmlContent += `<h3>Total de Leads E-commerce (Día): <span class="total">${leadsEcommerce.length}</span></h3>`;
 
-  // Iteramos por cada ramo y mostramos los detalles de los leads
-  for (const ramo in agrupadoPorRamos) {
-    const ramoData = agrupadoPorRamos[ramo];
-    htmlContent += `
-      <h4>${ramo} (${ramoData.total} Leads)</h4>
-      <table class="table">
-        <tr><th>ID</th><th>Nombre</th><th>Teléfono</th><th>Lead Source</th><th>MKT Campaigns</th><th>Fecha de Creación</th></tr>`;
+    // E-commerce: Agrupar por Ramo y Estrategia (SEM, SEO, FBK)
+    const agrupadoEcommerce = {};
+    leadsEcommerce.forEach(lead => {
+      let ramo = lead.Ramo || "Otros";  // Asignamos un ramo si no está definido
+      let estrategia = lead.estrategia || "Otros";  // Usamos el campo 'estrategia' que definimos previamente
 
-    // Añadir los leads del ramo
-    ramoData.leads.forEach(lead => {
+      if (!agrupadoEcommerce[ramo]) {
+        agrupadoEcommerce[ramo] = {
+          SEM: 0,
+          SEO: 0,
+          FBK: 0,
+          otros: 0,
+          leads: []
+        };
+      }
+
+      // Contabilizamos los leads por estrategia
+      if (estrategia === "SEM") agrupadoEcommerce[ramo].SEM++;
+      if (estrategia === "SEO") agrupadoEcommerce[ramo].SEO++;
+      if (estrategia === "FBK") agrupadoEcommerce[ramo].FBK++;
+      if (estrategia === "Otros") agrupadoEcommerce[ramo].otros++;
+
+      // Añadimos el lead al ramo correspondiente
+      agrupadoEcommerce[ramo].leads.push(lead);
+    });
+    htmlContent += `<table class="table">
+    <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+
+    // Agregar los resúmenes por ramo y estrategia de E-commerce
+    for (const ramo in agrupadoEcommerce) {
+      const ramoData = agrupadoEcommerce[ramo];
+      htmlContent += `
+        <tr>
+          <td>${ramo}</td>
+          <td>${ramoData.SEM + ramoData.SEO + ramoData.FBK + ramoData.otros}</td>
+          <td>${ramoData.SEM}</td>
+          <td>${ramoData.SEO}</td>
+          <td>${ramoData.FBK}</td>
+          <td>${ramoData.otros}</td>
+        </tr>`;
+    }
+
+    htmlContent += `</table>`;
+
+    // Detalles de los leads E-commerce
+    htmlContent += `<h3>Detalles de los Leads E-commerce (Día):</h3>`;
+    htmlContent += `<table class="table">
+      <tr><th>ID</th><th>Nombre</th><th>Lead Source</th><th>MKT Campaigns</th><th>Fecha de Creación</th></tr>`;
+
+    // Iteramos por los leads de E-commerce
+    leadsEcommerce.forEach(lead => {
       htmlContent += `
         <tr>
           <td>${lead.id}</td>
           <td>${lead.Full_Name}</td>
-          <td>${lead.Telefono}</td>
           <td>${lead.Lead_Source}</td>
           <td>${lead.MKT_Campaigns}</td>
           <td>${lead.Created_Time}</td>
         </tr>`;
     });
 
-    htmlContent += `</table>`;  // Cerrar tabla de detalles por ramo
+    htmlContent += `</table>`;
+  } else {
+    htmlContent += `<p>No hay datos de E-commerce para el Día.</p>`;
+  }
+    // Aquí finaliza E-Commerce
+   // Detalles de los Leads del Día que no han sido tocados, por ramo y estrategia
+  htmlContent += `<h3>Detalles de los Leads Sin Tocar (Día) por Ramo y Estrategia:</h3>`;
+
+  // Iteramos por los ramos para mostrar los leads organizados por Estrategia
+  for (const ramo in agrupadoPorRamos) {
+    // Omitimos el ramo "Asociados - Galindo"
+    if (ramo === "Asociados - Galindo") {
+      continue;  // Skip this iteration and move to the next ramo
+    }
+
+    htmlContent += `<h4>Ramo: ${ramo}</h4>`; // Mostrar el ramo como título
+    
+    // Agregar cada estrategia como tabla dentro del ramo
+    htmlContent += `<h5>SEM:</h5>`;
+    htmlContent += `<table class="table">
+        <tr><th>ID</th><th>Nombre</th><th>Lead Source</th><th>MKT Campaigns</th><th>Fecha de Creación</th></tr>`;
+    agrupadoPorRamos[ramo].leads.filter(lead => lead.estrategia === 'SEM').forEach(lead => {
+      htmlContent += `
+        <tr>
+          <td>${lead.id}</td>
+          <td>${lead.Full_Name}</td>
+          <td>${lead.Lead_Source}</td>
+          <td>${lead.MKT_Campaigns}</td>
+          <td>${lead.Created_Time}</td>
+        </tr>`;
+    });
+    htmlContent += `</table>`;
+
+    // SEO
+    htmlContent += `<h5>SEO:</h5>`;
+    htmlContent += `<table class="table">
+        <tr><th>ID</th><th>Nombre</th><th>Lead Source</th><th>MKT Campaigns</th><th>Fecha de Creación</th></tr>`;
+    agrupadoPorRamos[ramo].leads.filter(lead => lead.estrategia === 'SEO').forEach(lead => {
+      htmlContent += `
+        <tr>
+          <td>${lead.id}</td>
+          <td>${lead.Full_Name}</td>
+          <td>${lead.Lead_Source}</td>
+          <td>${lead.MKT_Campaigns}</td>
+          <td>${lead.Created_Time}</td>
+        </tr>`;
+    });
+    htmlContent += `</table>`;
+
+    // FBK
+    htmlContent += `<h5>FBK:</h5>`;
+    htmlContent += `<table class="table">
+        <tr><th>ID</th><th>Nombre</th><th>Lead Source</th><th>MKT Campaigns</th><th>Fecha de Creación</th></tr>`;
+    agrupadoPorRamos[ramo].leads.filter(lead => lead.estrategia === 'FBK').forEach(lead => {
+      htmlContent += `
+        <tr>
+          <td>${lead.id}</td>
+          <td>${lead.Full_Name}</td>
+          <td>${lead.Lead_Source}</td>
+          <td>${lead.MKT_Campaigns}</td>
+          <td>${lead.Created_Time}</td>
+        </tr>`;
+    });
+    htmlContent += `</table>`;
+
+    // Otros
+    htmlContent += `<h5>Otros:</h5>`;
+    htmlContent += `<table class="table">
+        <tr><th>ID</th><th>Nombre</th><th>Lead Source</th><th>MKT Campaigns</th><th>Fecha de Creación</th></tr>`;
+    agrupadoPorRamos[ramo].leads.filter(lead => lead.estrategia === 'Otros').forEach(lead => {
+      htmlContent += `
+        <tr>
+          <td>${lead.id}</td>
+          <td>${lead.Full_Name}</td>
+          <td>${lead.Lead_Source}</td>
+          <td>${lead.MKT_Campaigns}</td>
+          <td>${lead.Created_Time}</td>
+        </tr>`;
+    });
+    htmlContent += `</table>`;
   }
 
-  htmlContent += `</div></body></html>`;
+  htmlContent += `</table>`;
 
+  
+
+  // Si NotificarMail es false, no enviamos el correo, solo retornamos
+  if (!NotificarMail) {
+    console.log("Correo armado pero no enviado, NotificarMail es false.");
+    return;  // Detener la ejecución aquí si No se requiere el envío de correo
+  }
+
+  // Si NotificarMail es true, enviamos el correo
   const mailOptions = {
     from: 'aruiz@segurointeligente.mx',
     to: 'aruiz@siaqs.com',  // Destinatarios del correo
-    cc: ['eescoto@segurointeligente.mx', "ehernandez@segurointeligente.mx", 
-         "aescamilla@segurointeligente.mx","mgarcia@segurointeligente.mx", 
-         "lalonso@segurointeligente.mx", "cguzman@segurointeligente.mx"],
     subject: subject,
     html: htmlContent
   };
@@ -314,4 +584,51 @@ const enviarCorreo = async (response) => {
   } catch (error) {
     console.error('Error al enviar el correo:', error);
   }
+};
+
+const GetTokenZOHO = async () => {
+  const myHeaders = new Headers();
+  myHeaders.append("Cookie", "JSESSIONID=E919B1D5E331F0A1A5BD54CAB583863E; _zcsr_tmp=7fa9e2d1-1269-474d-8747-ca22d69ebac3; iamcsr=7fa9e2d1-1269-474d-8747-ca22d69ebac3; stk=799bb133510255490a1dd74e3c181b39; zalb_b266a5bf57=89d92f43aea9a45e372e725091716b73; zalb_e188bc05fe=174cb1181e0243f254fb6f0b5093b340");
+
+  const formdata = new FormData();
+  formdata.append("client_id", "1000.QJ6Y35YQES8I0OHI0Y6SOU1AX8M8NZ");
+  formdata.append("client_secret", "538dce75db721631b19ea2f68a2b5d35f3d253490d");
+  formdata.append("refresh_token", "1000.13cef90d982ab913fd0c1931306ffb3c.0f5ac8c9663de4a944e287f404e3aef1");
+  formdata.append("grant_type", "refresh_token");
+
+  const requestOptions = {
+    method: "POST",
+    headers: myHeaders,
+    body: formdata,
+    redirect: "follow"
+  };
+
+  try {
+    const response = await fetch("https://accounts.zoho.com/oauth/v2/token", requestOptions);
+    const result = await response.json();
+    
+    // Devuelves el objeto completo, o solo el `access_token` si lo necesitas
+    return result.access_token; // Retorna solo el access_token si es lo que necesitas
+  } catch (error) {
+    console.error('Error al obtener el token:', error);
+    throw error; // Lanza el error si algo falla
+  }
+};
+
+// Definir las landing pages para SEM, SEO y FBK
+const landingPages = {
+  SEM: [
+    "https://segurointeligente.mx/landingpages/QUALITAS/",
+    "https://segurointeligente.mx/landingpages/AXA/",
+    "https://segurointeligente.mx/seguro-autos/"
+    // Puedes agregar más LPs aquí para SEM
+  ],
+  SEO: [
+    "https://segurointeligente.mx/qualitas-seguros/", // Ejemplo de LP para SEO
+    // Puedes agregar más LPs aquí para SEO
+  ],
+  FBK: [
+    "https://segurointeligente.mx/qualitas-fbk/", // Ejemplo de LP para FBK
+    // Puedes agregar más LPs aquí para FBK
+  ]
 };
