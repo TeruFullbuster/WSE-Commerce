@@ -282,8 +282,35 @@ export const updateProspectoEcommerce = async (req, res) => {
     const { id } = req.params;
     const { leadsource, aseguradora, aseguradoracampana, descripcion, cvic, idCotMAG } = req.body;
     const paso = 2;
-
+    console.log(req.body);
     try {
+        let queryfirst = 'SELECT * FROM SesionesFantasma WHERE id = ?';
+        const [data] = await pool.query(queryfirst, [id]);
+        console.log(data[0]);
+
+        let cotizacionId = idCotMAG; // Valor inicial de idCotMAG
+        let precioCotizacion = null;
+        let descripcionCompleta = descripcion; // Inicialmente usando el valor de descripcion del body
+
+        // Si idCotMAG es inválido, obtener una nueva cotización
+        if (cotizacionId === 1 || cotizacionId === "1" || cotizacionId === "null" || cotizacionId === null || cotizacionId === "") {
+            console.log("No se actualiza el idCotMAG, obteniendo nuevo idCotMAG");
+            const Token = await GetTokenMAG();
+            console.log("Token obtenido:", Token);
+
+            const Cotizacion = await GetCotiAseg(Token.token, data);
+
+            console.log("Datos de cotización obtenidos:", Cotizacion.response.cotizacionInfo[0]);
+            precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el valor de primaTotal a precioCotizacion
+            descripcionCompleta = Cotizacion.response.cotizacionInfo[0].descripcion; // Asignar el valor de descripcion a descripcionCompleta
+
+            cotizacionId = Cotizacion.response.cotizacionInfo[0].id; // Asignar el nuevo idCotMAG de la cotización
+            console.log("Nuevo idCotMAG:", cotizacionId);
+        } else {
+            // Si idCotMAG es válido, simplemente asignamos el precio y descripción desde el body
+            precioCotizacion = precioCotizacion || 0; // Valor por defecto si no se obtiene un precio
+        }
+
         let query = 'UPDATE SesionesFantasma SET paso = ?';
         const params = [paso];
 
@@ -291,10 +318,11 @@ export const updateProspectoEcommerce = async (req, res) => {
         const fieldsToUpdate = [
             { field: 'leadsource', value: leadsource },
             { field: 'aseguradora', value: aseguradora },
-            { field: 'descripcion', value: descripcion },
+            { field: 'descripcioncompleta', value: descripcionCompleta }, // Asignar descripcion a descripcioncompleta
             { field: 'cevic', value: cvic }, // Mapear 'cvic' a 'cevic' en la base de datos
             { field: 'aseguradoracampana', value: aseguradoracampana },
-            { field: 'idCotMAG', value: idCotMAG }
+            { field: 'idCotMAG', value: cotizacionId }, // Usar el idCotMAG que ya puede ser el proporcionado o el obtenido
+            { field: 'precio_cotizacion', value: precioCotizacion } // Asignar primaTotal a precio_cotizacion
         ];
 
         fieldsToUpdate.forEach(({ field, value }) => {
@@ -1268,7 +1296,6 @@ export const GetDescription = (token, marca, modelo, submarca, aseguradora ) => 
         });
 };
 
-
 export const GetTokenMAG = () => {
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
@@ -1317,3 +1344,50 @@ export const GetAseg = (token) => {
             throw error;  // Lanza el error para manejarlo fuera de la función si es necesario
         });
 };
+
+export const GetCotiAseg = async (token, informacion) => {
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+    myHeaders.append("Authorization", `Bearer ${token}`);  // Usamos el token dinámicamente
+    console.log(token);
+    console.log(informacion);
+    const data = informacion[0]
+    console.log
+    const raw = JSON.stringify({
+        "marca": data.marca, // SI
+        "modelo": data.modelo, // SI
+        "subMarca": data.submarca, // SI
+        "cPostal": data.codigo_postal, // SI
+        "idGrupo": data.idGrupo, // SI
+        "emailVendedor": "e-commerce@segurointeligente.mx", // SI
+        "formaPago": "CONTADO", // SI
+        "fechaNacimiento": data.edad, // SI
+        "cobertura": "AMPLIA",
+        "genero": String(data.genero), // Convertir a string
+        "rfc": "XAXX010101000", 
+        "idcia": data.idCIA, // SI
+        "cevic": data.cevic // SI
+      });
+      
+    console.log(raw)
+    const requestOptions = {
+      method: "POST",
+      headers: myHeaders,
+      body: raw,
+      redirect: "follow"
+    };
+  
+    try {
+      // Esperamos la respuesta de la API con `await`
+      const response = await fetch("https://apis.segurointeligente.mx/api/Cotizacion/GetCotizacionAseg", requestOptions);
+      // Convertimos la respuesta a JSON
+      console.log(response)
+      const result = await response.json();
+      console.log(result);
+      return result;  // Retornamos el resultado
+    } catch (error) {
+      console.error("Error al obtener cotización:", error);
+      return error;  // Lanzamos el error si algo falla
+    }
+  };
+  

@@ -107,7 +107,7 @@ export const NotificacionDiariaLeads = async (req, res) => {
   console.log(`Fechas calculadas: ${fechaInicio.format()} - ${fechaFin.format()}`);
 
   // Usar la función para obtener el token
-  const token = "1000.00cba2e09d69d8bdf32aba2930bd04a7.8ee5bb4e54266af969cc926f34c22859"; //await GetTokenZOHO();
+  const token = await GetTokenZOHO();
   console.log(token); // Imprime el access_token
 
   try {
@@ -574,6 +574,7 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
   const mailOptions = {
     from: 'aruiz@segurointeligente.mx',
     to: 'aruiz@siaqs.com',  // Destinatarios del correo
+    //cc: ['ehernandez@segurointeligente.mx','eescoto@segurointeligente.mx', 'cguzman@segurointeligente.mx', 'lalonso@segurointeligente.mx','mgarcia@segurointeligente.mx','aescamilla@segurointeligente.mx'],
     subject: subject,
     html: htmlContent
   };
