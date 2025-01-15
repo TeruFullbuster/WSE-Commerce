@@ -963,7 +963,28 @@ export const GetCotID = async (req, res) => {
          }
 
             const data = rows[0][0];  // Acceder al primer resultado del procedimiento
+            let cotizacionId = data.idCotMAG; // Valor inicial de idCotMAG
+            let precioCotizacion = null;
+            let descripcionCompleta = data.descripcion; // Inicialmente usando el valor de descripcion del body
+            
+            // Si idCotMAG es inválido, obtener una nueva cotización
+            if (cotizacionId === 1 || cotizacionId === "1" || cotizacionId === "null" || cotizacionId === null || cotizacionId === "") {
+                console.log("No se actualiza el idCotMAG, obteniendo nuevo idCotMAG");
+                const Token = await GetTokenMAG();
+                console.log("Token obtenido:", Token);
 
+                const Cotizacion = await GetCotiAseg(Token.token, data);
+
+                console.log("Datos de cotización obtenidos:", Cotizacion.response.cotizacionInfo[0]);
+                precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el valor de primaTotal a precioCotizacion
+                descripcionCompleta = Cotizacion.response.cotizacionInfo[0].descripcion; // Asignar el valor de descripcion a descripcionCompleta
+
+                cotizacionId = Cotizacion.response.cotizacionInfo[0].id; // Asignar el nuevo idCotMAG de la cotización
+                console.log("Nuevo idCotMAG:", cotizacionId);
+            } else {
+                // Si idCotMAG es válido, simplemente asignamos el precio y descripción desde el body
+                precioCotizacion = precioCotizacion || 0; // Valor por defecto si no se obtiene un precio
+            }
             // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
             let finalDescripcion = data.descripcion;
             let idCIA = data.idCIA;  // Aquí guardamos idCIA desde la base de datos al principio
@@ -1018,7 +1039,7 @@ export const GetCotID = async (req, res) => {
                 }
 
                 // Actualizar la base de datos con el idCIA obtenido
-                await pool.query('UPDATE SesionesFantasma SET idCIA = ? WHERE id = ?', [idCIA, id]);
+                await pool.query('UPDATE SesionesFantasma SET idCIA = ?, idCotMAG = ? WHERE id = ?', [idCIA,cotizacionId, id]);
             }
             
             //Armamos datos para recotizacion
@@ -1065,7 +1086,7 @@ export const GetCotID = async (req, res) => {
                     num_cotizacion: data.num_cotizacion,
                     placa: data.placa,
                     num_motor: data.num_motor,
-                    Cotizacion_ID: data.idCotMAG
+                    Cotizacion_ID: cotizacionId
                 },
                 Aseguradora:{
                     Aseguradora: data.aseguradoracampana,
