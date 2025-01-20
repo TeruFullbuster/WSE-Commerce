@@ -1412,48 +1412,169 @@ export const GetCotiAseg = async (token, informacion) => {
     }
   };
   
-  export const GetCotiAseg2 = async (token, informacion) => {
+export const GetCotiAseg2 = async (token, informacion) => {
+const myHeaders = new Headers();
+myHeaders.append("Content-Type", "application/json");
+myHeaders.append("Authorization", `Bearer ${token}`);  // Usamos el token dinámicamente
+console.log(token);
+console.log(informacion);
+const data = informacion
+console.log
+const raw = JSON.stringify({
+    "marca": data.marca, // SI
+    "modelo": data.modelo, // SI
+    "subMarca": data.submarca, // SI
+    "cPostal": data.codigo_postal, // SI
+    "idGrupo": data.idGrupo, // SI
+    "emailVendedor": "e-commerce@segurointeligente.mx", // SI
+    "formaPago": "CONTADO", // SI
+    "fechaNacimiento": data.edad, // SI
+    "cobertura": "AMPLIA",
+    "genero": String(data.genero), // Convertir a string
+    "rfc": "XAXX010101000", 
+    "idcia": data.idCIA, // SI
+    "cevic": data.cevic // SI
+    });
+    
+console.log(raw)
+const requestOptions = {
+    method: "POST",
+    headers: myHeaders,
+    body: raw,
+    redirect: "follow"
+};
+
+try {
+    // Esperamos la respuesta de la API con `await`
+    const response = await fetch("https://apis.segurointeligente.mx/api/Cotizacion/GetCotizacionAseg", requestOptions);
+    // Convertimos la respuesta a JSON
+    console.log(response)
+    const result = await response.json();
+    console.log(result);
+    return result;  // Retornamos el resultado
+} catch (error) {
+    console.error("Error al obtener cotización:", error);
+    return error;  // Lanzamos el error si algo falla
+}
+};
+
+const GetBancosRel = async (token, idCia) => {
     const myHeaders = new Headers();
-    myHeaders.append("Content-Type", "application/json");
-    myHeaders.append("Authorization", `Bearer ${token}`);  // Usamos el token dinámicamente
+    myHeaders.append("Authorization", `Bearer ${token}`);
     console.log(token);
-    console.log(informacion);
-    const data = informacion
-    console.log
-    const raw = JSON.stringify({
-        "marca": data.marca, // SI
-        "modelo": data.modelo, // SI
-        "subMarca": data.submarca, // SI
-        "cPostal": data.codigo_postal, // SI
-        "idGrupo": data.idGrupo, // SI
-        "emailVendedor": "e-commerce@segurointeligente.mx", // SI
-        "formaPago": "CONTADO", // SI
-        "fechaNacimiento": data.edad, // SI
-        "cobertura": "AMPLIA",
-        "genero": String(data.genero), // Convertir a string
-        "rfc": "XAXX010101000", 
-        "idcia": data.idCIA, // SI
-        "cevic": data.cevic // SI
-      });
-      
-    console.log(raw)
+    console.log(idCia);
     const requestOptions = {
-      method: "POST",
+      method: "GET",
       headers: myHeaders,
-      body: raw,
       redirect: "follow"
     };
   
     try {
-      // Esperamos la respuesta de la API con `await`
-      const response = await fetch("https://apis.segurointeligente.mx/api/Cotizacion/GetCotizacionAseg", requestOptions);
-      // Convertimos la respuesta a JSON
-      console.log(response)
+      // Utilizamos await para esperar la respuesta de la solicitud fetch
+      const response = await fetch(`https://apis.segurointeligente.mx/api/Catalogos/BancosRel/${idCia}`, requestOptions);
+        console.log(response)
+      // Verificamos si la respuesta es exitosa
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+  
+      // Parseamos la respuesta a JSON
       const result = await response.json();
+      
+      // Mostramos el resultado
       console.log(result);
-      return result;  // Retornamos el resultado
+      return result; // Opcional, si necesitas retornar el resultado
+  
     } catch (error) {
-      console.error("Error al obtener cotización:", error);
-      return error;  // Lanzamos el error si algo falla
+      console.error('Error en la solicitud:', error);
     }
   };
+  
+
+  export const GetMSIxBanco = async (req, res) => {
+    const { idCIa } = req.params;
+    console.log("idCIa:", idCIa);
+
+    try {
+        // Paso 1: Obtener el token
+        const token = await GetTokenMAG();
+
+        // Paso 2: Obtener los bancos de la API
+        const resultadobancos = await GetBancosRel(token.token, idCIa);
+
+        // Paso 3: Obtener los MSI de la base de datos usando el SP
+        const msiData = await getMSIDataFromDB(idCIa);
+
+        // Paso 4: Convertir todos los bancos y los MSI a mayúsculas antes de comparar
+        const response = resultadobancos.response.map((banco) => {
+            // Verificamos que el nombre del banco esté definido antes de intentar convertirlo
+            const bancoNombreUpper = banco.banco.nombre ? banco.banco.nombre.toUpperCase() : "";
+            
+            // Verificamos si la aseguradora de este banco coincide con el idCIa
+            if (banco.aseguradora.id === parseInt(idCIa)) {
+                // Añadimos el campo MSI si se encuentra información de MSI
+                let msi = "SN MSI"; // Por defecto, si no hay MSI
+                
+                // Aseguramos que 'bancos_participantes' sea una cadena
+                const bancosParticipantes = msiData.bancos_participantes || "";
+                
+                // Convertir bancos participantes a mayúsculas y hacer la comparación
+                const bancosParticipantesUpper = bancosParticipantes.toUpperCase();
+                
+                // Limpiar y dividir la cadena de MSI y bancos
+                const matchingMSI = bancosParticipantesUpper.split(',').map(item => item.trim()).filter(msiValue => bancoNombreUpper.includes(msiValue));
+                
+                if (matchingMSI.length > 0) {
+                    // Si hay MSI, los unimos en un string
+                    msi = msiData.msiList.join(', ') || "SN MSI"; // Usamos la lista de MSI de la base de datos
+                }
+                
+                return {
+                    ...banco,
+                    MSI: msi // Añadimos el campo MSI con los valores obtenidos
+                };
+            }
+            return banco;
+        });
+
+        // Paso 5: Devolver la respuesta combinada
+        res.json({
+            message: "Ok",
+            response
+        });
+
+    } catch (error) {
+        console.error("Error al obtener la información:", error);
+        res.status(500).json({ message: "Hubo un error al procesar la solicitud", error: error.message });
+    }
+};
+
+// Función para obtener los MSI desde la base de datos
+const getMSIDataFromDB = async (idCIa) => {
+    try {
+        const [rows] = await pool.query(`
+            CALL GetAseguradorasConMSI(${idCIa});
+        `);
+
+        // Verificamos que rows tenga datos
+        if (rows.length > 0) {
+            const row = rows[0];  // Accedemos al primer registro
+
+            // Extraemos solo el campo MSI y lo convertimos a mayúsculas
+            const msiList = row[0].msi ? row[0].msi.toUpperCase().split(',').map(msi => msi.trim()) : [];
+            
+            // Extraemos los bancos participantes y los convertimos en mayúsculas
+            const bancosParticipantes = row[0].bancos_participantes ? row[0].bancos_participantes.toUpperCase() : "";
+            
+            return { msiList, bancos_participantes: bancosParticipantes };
+        } else {
+            
+            return { msiList: [], bancos_participantes: "" };
+        }
+    } catch (error) {
+        console.error("Error al consultar la base de datos:", error);
+        throw error;
+    }
+};
+
+

@@ -80,7 +80,6 @@ export const createCE = async (req, res) => {
 export const NotificacionDiariaLeads = async (req, res) => {
   const { TipoNotificacion, NotificarMail } = req.body;
 
-  // Calcular las fechas según TipoNotificacion
   let fechaInicio, fechaFin;
 
   const currentDate = moment().tz('America/Mexico_City'); // Fecha y hora actual en CDMX
@@ -88,43 +87,37 @@ export const NotificacionDiariaLeads = async (req, res) => {
   const endOfMonth = currentDate.clone().endOf('month'); // Último día del mes
 
   if (TipoNotificacion === "Inicial") {
-    // TipoNotificacion "Inicial": 8:00 PM del día anterior hasta 8:00 AM de hoy
-    fechaInicio = currentDate.clone().set({ hour: 20, minute: 0, second: 0, millisecond: 0 }).subtract(1, 'days');
-    fechaFin = currentDate.clone().set({ hour: 8, minute: 0, second: 0, millisecond: 0 });
+    // Configuramos fechaInicio para las 00:00 del día anterior
+    fechaInicio = currentDate.clone().subtract(1, 'days').startOf('day');
+    // Configuramos fechaFin para las 23:59 del día anterior
+    fechaFin = currentDate.clone().subtract(1, 'days').endOf('day');
   } else if (TipoNotificacion === "Final") {
-    // TipoNotificacion "Final": 8:00 AM de hoy hasta 8:00 PM de hoy
-    fechaInicio = currentDate.clone().set({ hour: 8, minute: 0, second: 0, millisecond: 0 });
-    fechaFin = currentDate.clone().set({ hour: 20, minute: 0, second: 0, millisecond: 0 });
+    // Configuramos fechaInicio para las 00:00 del día actual
+    fechaInicio = currentDate.clone().startOf('day');
+    // Configuramos fechaFin para las 23:59 del día actual
+    fechaFin = currentDate.clone().endOf('day');
   } else if (TipoNotificacion === "Historico") {
-    // TipoNotificacion "Historico": Todos los leads desde el inicio del mes hasta el final del mes
     fechaInicio = startOfMonth;
     fechaFin = endOfMonth;
   } else {
-    // Si el TipoNotificacion no es válido, retornamos un error
     return res.status(400).json({ message: "TipoNotificacion inválido" });
   }
 
-  console.log(`Fechas calculadas: ${fechaInicio.format()} - ${fechaFin.format()}`);
-
-  // Usar la función para obtener el token
   const token = await GetTokenZOHO();
-  console.log(token); // Imprime el access_token
+  const Vista = "2731176000504916665";
 
   try {
-    // Llamada a la función getLeads para obtener los leads dentro de las fechas
-    const informacion = await getLeads(token);
-    const leads = informacion.detallesSinTocar || [];  // Leads con "Sin Tocar"
-    console.log(leads[0].firstPage);  // Mostrar los leads obtenidos
-    // Inicializamos el objeto para agrupar por ramo
+    const informacion = await getLeads(token, Vista);
+    const leads = informacion.detallesSinTocar || [];
+    console.log(leads.length)
     const agrupadoPorRamos = {};
-    const historicoLeads = {};  // Para almacenar los leads históricos
-    const leadsEcommerce = []; // Para almacenar los leads que han evolucionado a E-COMMERCE
+    const historicoLeads = { SEM: 0, SEO: 0, FBK: 0, otros: 0 }; // Inicializar el objeto historicoLeads
+    const leadsEcommerce = [];
     let totalGeneral = { total: 0, SEM: 0, SEO: 0, FBK: 0, otros: 0 };
 
-    // Filtramos los leads según el rango de fechas
     const leadsFiltrados = leads.filter(lead => {
-      const createdTime = moment(lead.Created_Time); // Convertir Created_Time a objeto moment
-      return createdTime.isBetween(fechaInicio, fechaFin, null, '[]');  // Comparar si está entre las fechas
+      const createdTime = moment(lead.Created_Time);
+      return createdTime.isBetween(fechaInicio, fechaFin, null, '[]');
     });
 
     // Filtramos todos los leads del mes (históricos)
@@ -140,27 +133,24 @@ export const NotificacionDiariaLeads = async (req, res) => {
     historicoLeads.FBK = leadsHistoricos.filter(lead => lead.Lead_Source.includes("FBK")).length;
     historicoLeads.otros = leadsHistoricos.filter(lead => !lead.Lead_Source.includes("SEM") && !lead.Lead_Source.includes("SEO") && !lead.Lead_Source.includes("FBK")).length;
 
-    // Iteramos por los leads filtrados para agruparlos por ramo y luego por fuente
     leadsFiltrados.forEach(lead => {
-      let ramo = lead.Ramo || "Otros";  // Si no hay ramo, se asigna "Otros"
-      let leadSource = lead.Lead_Source || "";  // Obtenemos el campo Lead_Source
-      let estrategia = ""; // Campo estrategia que asignaremos según el caso
+      let ramo = lead.Ramo || "Otros";
+      let leadSource = lead.Lead_Source || "";
+      let estrategia = "";
 
-      // Verificamos si el lead pertenece a una URL de E-COMMERCE, para asociarlo con SEM, SEO o FBK
       if (landingPages.SEM.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
         estrategia = "SEM";
-        lead.estrategia = estrategia;  // Asignamos la estrategia al lead
-        leadsEcommerce.push(lead);  // Agregamos a la lista de E-COMMERCE
+        lead.estrategia = estrategia;
+        leadsEcommerce.push(lead);
       } else if (landingPages.SEO.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
         estrategia = "SEO";
-        lead.estrategia = estrategia;  // Asignamos la estrategia al lead
-        leadsEcommerce.push(lead);  // Agregamos a la lista de E-COMMERCE
+        lead.estrategia = estrategia;
+        leadsEcommerce.push(lead);
       } else if (landingPages.FBK.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
         estrategia = "FBK";
-        lead.estrategia = estrategia;  // Asignamos la estrategia al lead
-        leadsEcommerce.push(lead);  // Agregamos a la lista de E-COMMERCE
+        lead.estrategia = estrategia;
+        leadsEcommerce.push(lead);
       } else {
-        // Si no es E-commerce, asignamos la estrategia normal según el Lead_Source
         if (leadSource.endsWith("SEM")) {
           estrategia = "SEM";
         } else if (leadSource.includes("SEO") || leadSource.includes("Blog")) {
@@ -170,15 +160,13 @@ export const NotificacionDiariaLeads = async (req, res) => {
         } else {
           estrategia = "Otros";
         }
-        lead.estrategia = estrategia; // Asignamos la estrategia normal al lead
+        lead.estrategia = estrategia;
       }
 
-      // Si el Lead_Source es "LP-GYA", lo agrupamos bajo Asociados
       if (leadSource === "LP-GYA") {
         ramo = "Asociados - Galindo";
       }
 
-      // Inicializamos la estructura del ramo si no existe
       if (!agrupadoPorRamos[ramo]) {
         agrupadoPorRamos[ramo] = {
           total: 0,
@@ -190,9 +178,8 @@ export const NotificacionDiariaLeads = async (req, res) => {
         };
       }
 
-      // Contabilizamos los leads por fuente
       agrupadoPorRamos[ramo].total++;
-      totalGeneral.total++;  // Sumamos al total general
+      totalGeneral.total++;
       if (estrategia === "SEM") {
         agrupadoPorRamos[ramo].SEM++;
         totalGeneral.SEM++;
@@ -207,7 +194,6 @@ export const NotificacionDiariaLeads = async (req, res) => {
         totalGeneral.otros++;
       }
 
-      // Añadimos el lead a la lista del ramo correspondiente
       agrupadoPorRamos[ramo].leads.push({
         id: lead.id,
         Full_Name: lead.Full_Name,
@@ -216,25 +202,65 @@ export const NotificacionDiariaLeads = async (req, res) => {
         Created_Time: lead.Created_Time,
         Lead_Source: leadSource || "N/A",
         MKT_Campaigns: lead.MKT_Campaigns || "N/A",
-        estrategia: lead.estrategia || "N/A", // Añadimos el campo de estrategia
+        estrategia: lead.estrategia || "N/A",
         firstPage: lead.firstPage || "N/A"
       });
     });
 
-    // Crear el objeto de respuesta con la información organizada por ramos
+    // Estructura de historicoLeads ajustada para ser agrupada por ramo y estrategia
+    const agrupadoHistorico = {};  // Nueva estructura para leads históricos
+
+    // Llenamos los datos históricos (por ramo y estrategia)
+    leadsHistoricos.forEach(lead => {
+      let ramo = lead.Ramo || "Otros";  // Asignar un ramo si no está definido
+      let estrategia = ""; // Campo estrategia que asignaremos según el caso
+
+      // Asignamos la estrategia dependiendo del Lead_Source
+      if (lead.Lead_Source.endsWith("SEM")) {
+        estrategia = "SEM";
+      } else if (lead.Lead_Source.includes("SEO")) {
+        estrategia = "SEO";
+      } else if (lead.Lead_Source.includes("FBK")) {
+        estrategia = "FBK";
+      } else {
+        estrategia = "Otros";
+      }
+
+      // Inicializamos la estructura del ramo si no existe
+      if (!agrupadoHistorico[ramo]) {
+        agrupadoHistorico[ramo] = {
+          SEM: 0,
+          SEO: 0,
+          FBK: 0,
+          otros: 0,
+          leads: []
+        };
+      }
+
+      // Contabilizamos los leads por estrategia
+      if (estrategia === "SEM") agrupadoHistorico[ramo].SEM++;
+      if (estrategia === "SEO") agrupadoHistorico[ramo].SEO++;
+      if (estrategia === "FBK") agrupadoHistorico[ramo].FBK++;
+      if (estrategia === "Otros") agrupadoHistorico[ramo].otros++;
+
+      // Añadimos el lead al ramo correspondiente
+      agrupadoHistorico[ramo].leads.push(lead);
+    });
+
+    // Ahora agrupadoHistorico contiene los datos agrupados por ramo y estrategia
+
     const response = {
       message: "Notificación enviada",
-      total: leadsFiltrados.length,   // Total de registros encontrados
-      totalGeneral: totalGeneral,  // Agregar el total general
-      agrupadoPorRamos: agrupadoPorRamos,  // Ramo agrupado con leads y cantidades
-      historicoLeads: historicoLeads,  // Leads históricos
-      leadsEcommerce: leadsEcommerce  // Leads de E-Commerce
+      total: leadsFiltrados.length,
+      totalGeneral: totalGeneral,
+      agrupadoPorRamos: agrupadoPorRamos,
+      historicoLeads: historicoLeads,  // Aseguramos que historicoLeads está correctamente poblado
+      leadsEcommerce: leadsEcommerce,
+      agrupadoHistorico: agrupadoHistorico
     };
-    console.log(leadsEcommerce);
-    // Llamada para enviar el correo con el cuerpo y los detalles
-    await enviarCorreo(response, NotificarMail, TipoNotificacion);  // Enviar los detalles al correo
 
-    // Retornamos la respuesta organizada
+    await enviarCorreo(response, NotificarMail, TipoNotificacion);
+
     res.status(200).json(response);
   } catch (error) {
     console.error(error);
@@ -245,55 +271,187 @@ export const NotificacionDiariaLeads = async (req, res) => {
   }
 };
 
+// Notificación Diaria: Leads Sin Tocar
+export const NotificacionDiariaLeadsLC = async (req, res) => {
+  const { TipoNotificacion, NotificarMail } = req.body;
 
-const fetchAllLeads = async (url, myHeaders) => {
-  let allLeads = [];
-  let hasNextPage = true;
-  let nextPageToken = '';
+  let fechaInicio, fechaFin;
 
-  // Mientras haya más páginas
-  while (hasNextPage) {
-    let requestUrl = url;
-    if (nextPageToken) {
-      requestUrl += `&page_token=${nextPageToken}`;  // Añadir el token de la siguiente página
-    }
+  const currentDate = moment().tz('America/Mexico_City'); // Fecha y hora actual en CDMX
+  const startOfDay = currentDate.clone().startOf('day'); // Inicio del día (00:00)
+  const endOfDay = currentDate.clone().endOf('day'); // Fin del día (23:59:59)
 
-    try {
-      const response = await fetch(requestUrl, {
-        method: "GET",
-        headers: myHeaders,
-        redirect: "follow"
-      });
-
-      // Obtenemos la respuesta y la convertimos en JSON
-      const result = await response.json();
-
-      // Agregamos los leads a la lista total
-      allLeads = allLeads.concat(result.data);
-
-      // Verificamos si hay más registros
-      hasNextPage = result.info.more_records;
-
-      // Si hay más páginas, actualizamos el token para la siguiente solicitud
-      nextPageToken = result.info.next_page_token;
-    } catch (error) {
-      console.error("Error en la solicitud de la API:", error);
-      break;
-    }
+  // Establecer el rango de fechas según el tipo de notificación
+  if (TipoNotificacion === "Inicial") {
+    // Filtro para el inicio del día (00:00 - 08:00)
+    fechaInicio = startOfDay.clone();
+    fechaFin = endOfDay.clone();
+  } else if (TipoNotificacion === "Final") {
+    // Filtro para el resto del día (08:00 - 23:59)
+    fechaInicio = startOfDay.clone();
+    fechaFin = endOfDay.clone();
+  } else if (TipoNotificacion === "Historico") {
+    // Si es histórico, no filtramos por fecha, tomamos todo el mes
+    fechaInicio = startOfDay.clone();
+    fechaFin = endOfDay.clone();
+  } else {
+    return res.status(400).json({ message: "TipoNotificacion inválido" });
   }
 
-  return allLeads;  // Regresamos todos los leads combinados
+  const token = await GetTokenZOHO();
+  const Vista = "2731176000506201024";
+  try {
+    const informacion = await getLeadsLC(token, Vista);
+    const leads = informacion.Totales || [];
+
+    // Variables para organizar y clasificar los leads
+    const agrupadoPorRamos = {};
+    let historicoLeads = { SEM: 0, SEO: 0, FBK: 0, otros: 0 };
+    let leadsFiltrados = {};
+    let totalGeneral = { total: 0, SEM: 0, SEO: 0, FBK: 0, otros: 0 };
+
+    const filteredLeads = leads.filter(lead => {
+      const leadDate = moment(lead.Created_Time).tz('America/Mexico_City');
+      return leadDate.isBetween(fechaInicio, fechaFin, null, '[]'); // Filtra por fecha solo si no es historico
+    });
+    //console.log(filteredLeads)
+    // Llenamos los datos históricos de leads filtrados (todos los leads si es histórico)
+    historicoLeads.total = leads.length;
+    historicoLeads.SEM = leads.filter(lead => lead.Lead_Source.endsWith("SEM")).length;
+    historicoLeads.SEO = leads.filter(lead => lead.Lead_Source.includes("SEO")).length;
+    historicoLeads.FBK = leads.filter(lead => lead.Lead_Source.includes("FBK")).length;
+    historicoLeads.otros = leads.filter(lead => !lead.Lead_Source.includes("SEM") && !lead.Lead_Source.includes("SEO") && !lead.Lead_Source.includes("FBK")).length;
+
+    // Agrupar los leads filtrados por ramo
+    const ramosDetectados = filteredLeads.reduce((acc, lead) => {
+      const ramo = lead.Ramo || 'otros';
+      if (!acc[ramo]) acc[ramo] = 0;
+      acc[ramo]++;
+      return acc;
+    }, {});
+
+    // Agrupar los leads detallados por ramo
+    const leadsPorRamo = filteredLeads.reduce((acc, lead) => {
+      const ramo = lead.Ramo || 'otros';
+      if (!acc[ramo]) acc[ramo] = [];
+      acc[ramo].push(lead);
+      return acc;
+    }, {});
+
+    // Los datos por Ramo con total dinámico para el día
+    leadsFiltrados = {
+      total: filteredLeads.length,
+      ...ramosDetectados
+    };
+
+    // Agregar el total de leads por ramo para el día
+    const totalLeadsPorRamo = Object.keys(leadsPorRamo).reduce((acc, ramo) => {
+      acc[ramo] = leadsPorRamo[ramo].length; // Total de leads por ramo
+      return acc;
+    }, {});
+
+    // Crear el campo `leadsxdia` que contiene los leads organizados por Ramo y Estrategia
+    const leadsxdia = Object.keys(leadsPorRamo).reduce((acc, ramo) => {
+      acc[ramo] = {
+        SEM: [],
+        SEO: [],
+        FBK: [],
+        otros: []
+      };
+      // Clasificar los leads de cada ramo por estrategia
+      leadsPorRamo[ramo].forEach(lead => {
+        if (lead.Lead_Source.includes("SEM")) {
+          acc[ramo].SEM.push(lead);
+        } else if (lead.Lead_Source.includes("SEO")) {
+          acc[ramo].SEO.push(lead);
+        } else if (lead.Lead_Source.includes("FBK")) {
+          acc[ramo].FBK.push(lead);
+        } else {
+          acc[ramo].otros.push(lead);
+        }
+      });
+      return acc;
+    }, {});
+
+    // Actualizar totalGeneral con los totales del día
+    totalGeneral.total = filteredLeads.length;
+    totalGeneral.SEM = filteredLeads.filter(lead => lead.Lead_Source.endsWith("SEM")).length;
+    totalGeneral.SEO = filteredLeads.filter(lead => lead.Lead_Source.includes("SEO")).length;
+    totalGeneral.FBK = filteredLeads.filter(lead => lead.Lead_Source.includes("FBK")).length;
+    totalGeneral.otros = filteredLeads.filter(lead => !lead.Lead_Source.includes("SEM") && !lead.Lead_Source.includes("SEO") && !lead.Lead_Source.includes("FBK")).length;
+
+    // Preparamos la respuesta para ser enviada al correo
+    const response = {
+      message: "Notificación enviada",
+      totalGeneral: totalGeneral,  // Nuevo campo con los totales del día
+      historicoLeads: historicoLeads,  // Datos históricos (si se aplica)
+      LeadsxRamo: leadsFiltrados,
+      totalLeadsPorRamo: totalLeadsPorRamo, // Total de leads por ramo
+      leadsPorRamo: leadsPorRamo, // Desglose por ramo
+      leadsxdia: leadsxdia, // Nuevos datos que incluyen leads por estrategia y ramo
+      data: informacion
+    };
+
+    // Enviar el correo con la respuesta
+    await enviarCorreoLC(response, NotificarMail, TipoNotificacion);
+    res.status(200).json(response);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Hubo un error al procesar la notificación",
+      error: error.message
+    });
+  }
 };
 
-// Función para obtener leads
-async function getLeads(token) {
+  const fetchAllLeads = async (url, myHeaders) => {
+    let allLeads = [];
+    let hasNextPage = true;
+    let nextPageToken = '';
+
+    // Mientras haya más páginas
+    while (hasNextPage) {
+      let requestUrl = url;
+      if (nextPageToken) {
+        requestUrl += `&page_token=${nextPageToken}`;  // Añadir el token de la siguiente página
+      }
+
+      try {
+        const response = await fetch(requestUrl, {
+          method: "GET",
+          headers: myHeaders,
+          redirect: "follow"
+        });
+
+        // Obtenemos la respuesta y la convertimos en JSON
+        const result = await response.json();
+
+        // Agregamos los leads a la lista total
+        allLeads = allLeads.concat(result.data);
+
+        // Verificamos si hay más registros
+        hasNextPage = result.info.more_records;
+
+        // Si hay más páginas, actualizamos el token para la siguiente solicitud
+        nextPageToken = result.info.next_page_token;
+      } catch (error) {
+        console.error("Error en la solicitud de la API:", error);
+        break;
+      }
+    }
+
+    return allLeads;  // Regresamos todos los leads combinados
+  };
+
+// Función para obtener leads Sin Tocar
+async function getLeads(token, vista) {
   const myHeaders = new Headers();
   myHeaders.append("Authorization", `Zoho-oauthtoken ${token}`);
   myHeaders.append("Accept", "application/json");  // Cambié a JSON, ya que estás trabajando con objetos en formato JSON
   myHeaders.append("Cookie", "_zcsr_tmp=5cd7c811-88f6-4f4e-8316-ff6df3d261c1; crmcsr=5cd7c811-88f6-4f4e-8316-ff6df3d261c1; group_name=usergroup2; zalb_1a99390653=47948cd9e3fe72a2701dbc53294d291e");
 
   // Crear la URL con las fechas dinámicamente
-  const url = `https://www.zohoapis.com/crm/v7/Leads?cvid=2731176000504916665`;
+  const url = `https://www.zohoapis.com/crm/v7/Leads?cvid=${vista}`;
 
   // Obtenemos todos los leads
   const leads = await fetchAllLeads(url, myHeaders);
@@ -314,6 +472,37 @@ async function getLeads(token) {
   return responseJson;  // Regresar el JSON con los detalles
 }
 
+// Función para obtener leads
+async function getLeadsLC(token, vista) {
+  const myHeaders = new Headers();
+  myHeaders.append("Authorization", `Zoho-oauthtoken ${token}`);
+  myHeaders.append("Accept", "application/json");  // Cambié a JSON, ya que estás trabajando con objetos en formato JSON
+  myHeaders.append("Cookie", "_zcsr_tmp=5cd7c811-88f6-4f4e-8316-ff6df3d261c1; crmcsr=5cd7c811-88f6-4f4e-8316-ff6df3d261c1; group_name=usergroup2; zalb_1a99390653=47948cd9e3fe72a2701dbc53294d291e");
+
+  // Crear la URL con las fechas dinámicamente
+  const url = `https://www.zohoapis.com/crm/v7/Leads?cvid=${vista}`;
+  console.log(url)
+  console.log(token)
+  // Obtenemos todos los leads
+  const leads = await fetchAllLeads(url, myHeaders);
+
+  // Filtrar los leads "Sin Tocar"
+  const sinTocar = leads.filter(lead => lead.Estatus_Lead_Prospecto === "Sin Tocar");
+  const ContactoEfectivo = leads.filter(lead => lead.Estatus_Lead_Prospecto === "Contacto Efectivo");
+  const SinContactoefectivo = leads.filter(lead => lead.Estatus_Lead_Prospecto === "Sin Contacto efectivo");
+  const Otros = leads.filter(lead => lead.Estatus_Lead_Prospecto !== "Sin Tocar" && lead.Estatus_Lead_Prospecto !== "Contacto Efectivo" && lead.Estatus_Lead_Prospecto !== "Sin Contacto efectivo");
+  // Resultado final con los detalles
+  const responseJson = {
+    message: "OK",
+    ContactoEfectivo: ContactoEfectivo.length,
+    SinTocar: sinTocar.length,
+    SinContactoefectivo: SinContactoefectivo.length,
+    Otros : Otros.length,
+    Totales : leads
+  };
+
+  return responseJson;  // Regresar el JSON con los detalles
+}
 
 // Correo para notificación
 const transporter = nodemailer.createTransport({
@@ -345,7 +534,7 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
   }
   console.log(NotificarMail);  // Verificar el valor booleano de NotificarMail
 
-  const { agrupadoPorRamos, totalGeneral, historicoLeads, leadsEcommerce } = response;
+  const { agrupadoPorRamos,agrupadoHistorico, totalGeneral, historicoLeads, leadsEcommerce } = response;
   console.log(totalGeneral);  // Mostrar el total general de leads
   console.log(leadsEcommerce);  // Mostrar los leads leadsEcommerce
   console.log(leadsEcommerce.length);  // Mostrar la cantidad de leads E-COMMERCE
@@ -390,28 +579,29 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
       </tr>`;
   }
   
-  htmlContent += `</table>`;
+    htmlContent += `</table>`;
 
-  // Resumen Histórico de Leads Sin Tocar
+    // Resumen Histórico de Leads Sin Tocar
   htmlContent += `<h3>Total de Leads Sin Tocar Histórico (Mes): <span class="total">${historicoLeads.total}</span></h3>
-    <table class="table">
-      <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+  <table class="table">
+    <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
 
-  // Agregar los resúmenes por ramo históricos
-  for (const ramo in agrupadoPorRamos) {
-    const ramoData = agrupadoPorRamos[ramo];
-    htmlContent += `
-      <tr>
-        <td>${ramo}</td>
-        <td>${ramoData.total}</td>
-        <td>${ramoData.SEM}</td>
-        <td>${ramoData.SEO}</td>
-        <td>${ramoData.FBK}</td>
-        <td>${ramoData.otros}</td>
-      </tr>`;
+  // Agregar los resúmenes por ramo históricos desde agrupadoHistorico
+  for (const ramo in agrupadoHistorico) {
+  const ramoData = agrupadoHistorico[ramo];
+  htmlContent += `
+    <tr>
+      <td>${ramo}</td>
+      <td>${ramoData.SEM + ramoData.SEO + ramoData.FBK + ramoData.otros}</td>
+      <td>${ramoData.SEM}</td>
+      <td>${ramoData.SEO}</td>
+      <td>${ramoData.FBK}</td>
+      <td>${ramoData.otros}</td>
+    </tr>`;
   }
 
   htmlContent += `</table>`;
+
 
   // E-commerce: Resumen por Estrategia (Si existen Leads de E-commerce)
   if (leadsEcommerce.length > 0) {
@@ -586,6 +776,189 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
     console.error('Error al enviar el correo:', error);
   }
 };
+
+const enviarCorreoLC = async (response, NotificarMail, TipoNotificacion) => {
+  NotificarMail = NotificarMail === "True" || NotificarMail === true;
+  const currentTimeCDMX = moment().tz('America/Mexico_City').format('YYYY-MM-DD HH:mm:ss');
+  let subject = "Notificación de Leads Lineas Comerciales";
+
+  // Modificar el asunto según el tipo de notificación
+  if (TipoNotificacion === "Inicial") {
+    subject += " Apertura";
+  } else if (TipoNotificacion === "Final") {
+    subject += " Cierre";
+  } else if (TipoNotificacion === "Historico") {
+    subject += " Histórico";
+  }
+
+  const { totalGeneral, historicoLeads, leadsxdia, LeadsxRamo, totalLeadsPorRamo, leadsPorRamo, data } = response;
+
+  let htmlContent = `
+    <html lang="es">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+        <style>
+          body { font-family: Arial, sans-serif; background-color: #f4f4f4; }
+          .container { background-color: #ffffff; padding: 20px; }
+          h1 { color: #3498db; text-align: center; }
+          .table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+          .table th, .table td { padding: 8px; text-align: center; border: 1px solid #ddd; }
+          .total { font-weight: bold; font-size: 24px; color: #e74c3c; }
+        </style>
+      </head>
+      <body>
+        <div class="container">
+          <h1>${subject}</h1>
+          <p><strong>Fecha de Envío:</strong> ${currentTimeCDMX}</p>`;
+
+  // ** Total de Leads del Día Vigente (Día Actual) **
+  if (totalGeneral.total > 0) {
+    htmlContent += `<h3>Total de Leads (Día Vigente): <span class="total">${totalGeneral.total}</span></h3>
+      <table class="table">
+        <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+
+    for (const ramo in totalLeadsPorRamo) {
+      htmlContent += `
+        <tr>
+          <td>${ramo}</td>
+          <td>${totalLeadsPorRamo[ramo]}</td>
+          <td>${leadsxdia[ramo]?.SEM.length || 0}</td>
+          <td>${leadsxdia[ramo]?.SEO.length || 0}</td>
+          <td>${leadsxdia[ramo]?.FBK.length || 0}</td>
+          <td>${leadsxdia[ramo]?.otros.length || 0}</td>
+        </tr>`;
+    }
+    htmlContent += `</table>`;
+  }
+
+  // ** Leads Históricos (Total de Todos los Leads) **
+  if (historicoLeads.total > 0) {
+    htmlContent += `<h3>Total de Leads (Histórico): <span class="total">${historicoLeads.total}</span></h3>
+    <table class="table">
+      <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+
+    // Recorrer los leads en `data.Totales` y organizarlos por ramo
+    for (const ramo in LeadsxRamo) {
+      if (LeadsxRamo.hasOwnProperty(ramo)) {
+        // Buscar la cantidad total de leads por ramo
+        const leads = data.Totales.filter(lead => lead.Ramo === ramo);
+        const totalLeads = leads.length;
+        const semCount = leads.filter(lead => lead.Lead_Source === 'LP-LC-GMM-SEM').length;
+        const seoCount = leads.filter(lead => lead.Lead_Source === 'LP-LC-GMM-SEO').length;
+        const fbkCount = leads.filter(lead => lead.Lead_Source === 'LP-LC-GMM-FBK').length;
+        const otrosCount = leads.filter(lead => lead.Lead_Source === 'LP-LC-GMM-otros').length;
+
+        htmlContent += `
+          <tr>
+            <td>${ramo}</td>
+            <td>${totalLeads}</td>
+            <td>${semCount}</td>
+            <td>${seoCount}</td>
+            <td>${fbkCount}</td>
+            <td>${otrosCount}</td>
+          </tr>`;
+      }
+    }
+
+    htmlContent += `</table>`;
+  }
+
+   // ** Leads por Ramo y Estatus **
+   if (Object.keys(LeadsxRamo).length > 0) {
+    htmlContent += `<h3>Leads por Ramo y Estatus:</h3>`;
+    htmlContent += `<table class="table">
+      <tr>
+        <th>Ramo</th>
+        <th>Sin Tocar</th>
+        <th>Sin Contacto Efectivo</th>
+        <th>Contacto Efectivo</th>
+        <th>Otros</th>
+      </tr>`;
+
+    for (const ramo in LeadsxRamo) {
+      let sinTocar = 0, sinContactoEfectivo = 0, contactoEfectivo = 0, otros = 0;
+
+      if (Array.isArray(leadsPorRamo[ramo])) {
+        leadsPorRamo[ramo].forEach(lead => {
+          switch (lead.Estatus_Lead_Prospecto) {
+            case 'Sin Tocar': sinTocar++; break;
+            case 'Sin Contacto efectivo': sinContactoEfectivo++; break;
+            case 'Contacto Efectivo': contactoEfectivo++; break;
+            case 'Otros': otros++; break;
+          }
+        });
+      }
+
+      if (sinTocar || sinContactoEfectivo || contactoEfectivo || otros) {
+        htmlContent += `
+          <tr>
+            <td>${ramo}</td>
+            <td>${sinTocar}</td>
+            <td>${sinContactoEfectivo}</td>
+            <td>${contactoEfectivo}</td>
+            <td>${otros}</td>
+          </tr>`;
+      }
+    }
+    htmlContent += `</table>`;
+  }
+  // ** Detalles de los Leads por Estrategia y Ramo **
+  if (Object.keys(leadsxdia).length > 0) {
+    htmlContent += `<h3>Detalles de los Leads (Día Vigente) por Ramo y Estrategia:</h3>`;
+    for (const ramo in leadsxdia) {
+      htmlContent += `<h4>Ramo: ${ramo}</h4>`;
+
+      const estrategias = ['SEM', 'SEO', 'FBK', 'otros'];
+      estrategias.forEach(estrategia => {
+        if (leadsxdia[ramo][estrategia]?.length > 0) {
+          htmlContent += `<h5>${estrategia}:</h5>`;
+          htmlContent += `<table class="table">
+            <tr><th>ID</th><th>Nombre</th><th>Lead Source</th><th>Fecha de Creación</th><th>Propietario</th></tr>`;
+
+          leadsxdia[ramo][estrategia].forEach(lead => {
+            htmlContent += `
+              <tr>
+                <td>${lead.id}</td>
+                <td>${lead.First_Name} ${lead.Last_Name}</td>
+                <td>${lead.Lead_Source}</td>
+                <td>${lead.Created_Time}</td>
+                <td>${lead.Owner.name}</td>
+              </tr>`;
+          });
+          htmlContent += `</table>`;
+        }
+      });
+    }
+  }
+
+ 
+
+  htmlContent += `</div></body></html>`;
+
+  // Si NotificarMail es false, no enviamos el correo, solo retornamos
+  if (!NotificarMail) {
+    console.log("Correo armado pero no enviado, NotificarMail es false.");
+    return;
+  }
+
+  // Enviar el correo
+  const mailOptions = {
+    from: 'aruiz@segurointeligente.mx',
+    to: 'aruiz@siaqs.com',  // Destinatarios del correo
+    subject: subject,
+    html: htmlContent
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Correo enviado:", info.response);
+  } catch (error) {
+    console.error('Error al enviar el correo:', error);
+  }
+};
+
 
 const GetTokenZOHO = async () => {
   const myHeaders = new Headers();
