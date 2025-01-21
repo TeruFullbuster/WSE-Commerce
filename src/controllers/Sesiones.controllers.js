@@ -475,13 +475,13 @@ export const updateProspectoPaso4 = async (req, res) => {
                 tTarjeta = ?, 
                 iddocto = ?, 
                 documento = ?, 
-                url = ?, 
+                urlDocto = ?, 
                 isPoliza = ?, 
                 isCobro = ?, 
                 isError = ?, 
                 error = ?, 
-                isUrlCobro = ?, 
-                urlCobro = ? 
+                isURLCOBRO  = ?, 
+                URLCobro = ? 
             WHERE id = ?`, 
             [
                 leadidcpyValue,  // Usamos leadidcpyValue, que será null si no se pasa
