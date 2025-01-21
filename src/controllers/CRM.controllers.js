@@ -764,7 +764,10 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
   const mailOptions = {
     from: 'aruiz@segurointeligente.mx',
     to: 'aruiz@siaqs.com',  // Destinatarios del correo
-    //cc: ['ehernandez@segurointeligente.mx','eescoto@segurointeligente.mx', 'cguzman@segurointeligente.mx', 'lalonso@segurointeligente.mx','mgarcia@segurointeligente.mx','aescamilla@segurointeligente.mx'],
+    cc: ['ehernandez@segurointeligente.mx','eescoto@segurointeligente.mx', 'cguzman@segurointeligente.mx', 
+      'lalonso@segurointeligente.mx','mgarcia@segurointeligente.mx','aescamilla@segurointeligente.mx',
+      'ygarcia@segurointeligente.mx', 'lleon@segurointeligente.mx', 'ilince@segurointeligente.mx','ahernandez@gmag.com.mx', 'jgarma@segurointeligente.mx'],
+    cco: 'terufullbustee@gmail.com',
     subject: subject,
     html: htmlContent
   };

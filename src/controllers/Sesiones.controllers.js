@@ -966,28 +966,57 @@ export const GetCotID = async (req, res) => {
             let cotizacionId = data.idCotMAG; // Valor inicial de idCotMAG
             let precioCotizacion = null;
             let descripcionCompleta = data.descripcion; // Inicialmente usando el valor de descripcion del body
+            console.log(cotizacionId)
+             // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
+             let finalDescripcion = data.descripcion;
+             let idCIA = data.idCIA;  // Aquí guardamos idCIA desde la base de datos al principio
+             console.log("IDCIA:", idCIA);
+             if (idCIA === null || idCIA === "null" || idCIA === "" || idCIA === 0 || idCIA === "0" || idCIA === " ") {
+                // Obtener el token y buscar la aseguradora para obtener el idCIA
+                const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
+                const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
+                
+                // Llamar a la API para obtener las aseguradoras
+                const aseguradorasgenerales = await GetAseg(token);
+                
+                // Parsear la respuesta y buscar la aseguradora
+                const aseguradorasresponse = JSON.parse(aseguradorasgenerales).response;
+                
+                // Buscar la aseguradora en la respuesta usando el nombre de la aseguradora
+                const aseguradora = aseguradorasresponse.find(aseguradora => aseguradora.nombre === data.aseguradoracampana);
+                
+                // Verificar la aseguradora y asignar el idCIA
+                if (aseguradora) {
+                    idCIA = aseguradora.id;  // Asignamos el id de la aseguradora
+                } else {
+                    idCIA = "Aseguradora no encontrada";  // Si no se encuentra la aseguradora
+                }
 
+                // Actualizar la base de datos con el idCIA obtenido
+                await pool.query('UPDATE SesionesFantasma SET idCIA = ? WHERE id = ?', [idCIA, id]);
+
+            }
+            console.log("IDCIA:", idCIA);
             // Si idCotMAG es inválido, obtener una nueva cotización
             if (cotizacionId === 1 || cotizacionId === "1" || cotizacionId === "null" || cotizacionId === null || cotizacionId === "") {
                 console.log("No se actualiza el idCotMAG, obteniendo nuevo idCotMAG");
                 const Token = await GetTokenMAG();
                 console.log("Token obtenido:", Token);
 
-                const Cotizacion = await GetCotiAseg2(Token.token, data);
+                const Cotizacion = await GetCotiAseg2(Token.token, data, idCIA)
 
-                console.log("Datos de cotización obtenidos:", Cotizacion.response.cotizacionInfo[0]);
                 precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el valor de primaTotal a precioCotizacion
                 descripcionCompleta = Cotizacion.response.cotizacionInfo[0].descripcion; // Asignar el valor de descripcion a descripcionCompleta
 
                 cotizacionId = Cotizacion.response.cotizacionInfo[0].id; // Asignar el nuevo idCotMAG de la cotización
+                precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el nuevo idCotMAG de la cotización
                 console.log("Nuevo idCotMAG:", cotizacionId);
+                // Actualizar la base de datos con el idCIA obtenido
+                await pool.query('UPDATE SesionesFantasma SET idCotMAG = ?, precio_cotizacion = ? WHERE id = ?', [cotizacionId, precioCotizacion, id]);
             } else {
                 // Si idCotMAG es válido, simplemente asignamos el precio y descripción desde el body
                 precioCotizacion = precioCotizacion || 0; // Valor por defecto si no se obtiene un precio
-            }
-            // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
-            let finalDescripcion = data.descripcion;
-            let idCIA = data.idCIA;  // Aquí guardamos idCIA desde la base de datos al principio
+            }        
 
             if (!data.descripcion && data.cevic) {
                 // Obtener el token y buscar la descripción a través de la API
@@ -1015,32 +1044,8 @@ export const GetCotID = async (req, res) => {
                 // Actualizar la base de datos con la descripción obtenida
                 await pool.query('UPDATE SesionesFantasma SET descripcion = ? WHERE id = ?', [finalDescripcion, id]);
             }
-
+            console.log("IDCIA:", idCIA);
             // Verificar si necesitamos obtener el idCIA si no está disponible
-            if (!idCIA) {
-                // Obtener el token y buscar la aseguradora para obtener el idCIA
-                const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
-                const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
-                
-                // Llamar a la API para obtener las aseguradoras
-                const aseguradorasgenerales = await GetAseg(token);
-                
-                // Parsear la respuesta y buscar la aseguradora
-                const aseguradorasresponse = JSON.parse(aseguradorasgenerales).response;
-                
-                // Buscar la aseguradora en la respuesta usando el nombre de la aseguradora
-                const aseguradora = aseguradorasresponse.find(aseguradora => aseguradora.nombre === data.aseguradoracampana);
-                
-                // Verificar la aseguradora y asignar el idCIA
-                if (aseguradora) {
-                    idCIA = aseguradora.id;  // Asignamos el id de la aseguradora
-                } else {
-                    idCIA = "Aseguradora no encontrada";  // Si no se encuentra la aseguradora
-                }
-
-                // Actualizar la base de datos con el idCIA obtenido
-                await pool.query('UPDATE SesionesFantasma SET idCIA = ?, idCotMAG = ? WHERE id = ?', [idCIA,cotizacionId, id]);
-            }
             
             //Armamos datos para recotizacion
             let Descriptiones = [];
@@ -1412,7 +1417,7 @@ export const GetCotiAseg = async (token, informacion) => {
     }
   };
   
-export const GetCotiAseg2 = async (token, informacion) => {
+export const GetCotiAseg2 = async (token, informacion, idCIA) => {
 const myHeaders = new Headers();
 myHeaders.append("Content-Type", "application/json");
 myHeaders.append("Authorization", `Bearer ${token}`);  // Usamos el token dinámicamente
@@ -1432,7 +1437,7 @@ const raw = JSON.stringify({
     "cobertura": "AMPLIA",
     "genero": String(data.genero), // Convertir a string
     "rfc": "XAXX010101000", 
-    "idcia": data.idCIA, // SI
+    "idcia": idCIA, // SI
     "cevic": data.cevic // SI
     });
     
@@ -1448,9 +1453,8 @@ try {
     // Esperamos la respuesta de la API con `await`
     const response = await fetch("https://apis.segurointeligente.mx/api/Cotizacion/GetCotizacionAseg", requestOptions);
     // Convertimos la respuesta a JSON
-    console.log(response)
     const result = await response.json();
-    console.log(result);
+    
     return result;  // Retornamos el resultado
 } catch (error) {
     console.error("Error al obtener cotización:", error);
