@@ -460,7 +460,7 @@ export const NotificacionDiariaLeadsSimple = async (req, res) => {
       agrupadoHistorico: agrupadoHistorico
     };
 
-    enviarCorreo(response, NotificarMail, TipoNotificacion);
+    await enviarCorreo(response, NotificarMail, TipoNotificacion);
 
     res.status(200).json(response);
   } catch (error) {
