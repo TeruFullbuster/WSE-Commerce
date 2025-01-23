@@ -275,6 +275,204 @@ export const NotificacionDiariaLeads = async (req, res) => {
 };
 
 // Notificación Diaria: Leads Sin Tocar
+export const NotificacionDiariaLeadsSimple = async (req, res) => {
+  const { TipoNotificacion, NotificarMail } = req.params;
+
+  let fechaInicio, fechaFin;
+
+  const currentDate = moment().tz('America/Mexico_City'); // Fecha y hora actual en CDMX
+  const startOfMonth = currentDate.clone().startOf('month'); // Primer día del mes
+  const endOfMonth = currentDate.clone().endOf('month'); // Último día del mes
+  
+  if (TipoNotificacion === "Inicial") {
+   // Configuramos fechaInicio para las 00:00 del día vigente en la zona horaria de CDMX
+    fechaInicio = currentDate.clone().startOf('day'); // 00:00:00
+    fechaInicio = fechaInicio.format('YYYY-MM-DDTHH:mm:ss.SSSZ')
+  // Configuramos fechaFin para las 23:59 del día vigente en la zona horaria de CDMX
+    fechaFin = currentDate.clone().endOf('day'); // 23:59:59
+    fechaFin = fechaFin.format('YYYY-MM-DDTHH:mm:ss.SSSZ');
+  } else if (TipoNotificacion === "Final") {
+    // Configuramos fechaInicio para las 00:00 del día actual
+    fechaInicio = currentDate.clone().startOf('day');
+    // Configuramos fechaFin para las 23:59 del día actual
+    fechaFin = currentDate.clone().endOf('day');
+  } else if (TipoNotificacion === "Historico") {
+    fechaInicio = startOfMonth;
+    fechaFin = endOfMonth;
+  } else {
+    return res.status(400).json({ message: "TipoNotificacion inválido" });
+  }
+
+  const token = await GetTokenZOHO();
+  const Vista = "2731176000504916665";
+
+  try {
+    const informacion = await getLeads(token, Vista);
+    const leads = informacion.detallesSinTocar || [];
+
+    const agrupadoPorRamos = {};
+    const historicoLeads = { SEM: 0, SEO: 0, FBK: 0, otros: 0 }; // Inicializar el objeto historicoLeads
+    const leadsEcommerce = [];
+    let totalGeneral = { total: 0, SEM: 0, SEO: 0, FBK: 0, otros: 0 };
+
+    const leadsFiltrados = leads.filter(lead => {
+      const createdTime = moment(lead.Created_Time);
+      return createdTime.isBetween(fechaInicio, fechaFin, null, '[]');
+    });
+
+    // Filtramos todos los leads del mes (históricos)
+    const leadsHistoricos = leads.filter(lead => {
+      const createdTime = moment(lead.Created_Time);
+      return createdTime.isBetween(startOfMonth, endOfMonth, null, '[]');
+    });
+
+    // Llenamos los datos históricos
+    historicoLeads.total = leadsHistoricos.length;
+    historicoLeads.SEM = leadsHistoricos.filter(lead => lead.Lead_Source.includes("SEM")).length;
+    historicoLeads.SEO = leadsHistoricos.filter(lead => lead.Lead_Source.includes("SEO")).length;
+    historicoLeads.FBK = leadsHistoricos.filter(lead => lead.Lead_Source.includes("FBK")).length;
+    historicoLeads.otros = leadsHistoricos.filter(lead => !lead.Lead_Source.includes("SEM") && !lead.Lead_Source.includes("SEO") && !lead.Lead_Source.includes("FBK")).length;
+
+    leadsFiltrados.forEach(lead => {
+      let ramo = lead.Ramo || "Otros";
+      let leadSource = lead.Lead_Source || "";
+      let estrategia = "";
+
+      if (landingPages.SEM.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
+        estrategia = "SEM";
+        lead.estrategia = estrategia;
+        leadsEcommerce.push(lead);
+      } else if (landingPages.SEO.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
+        estrategia = "SEO";
+        lead.estrategia = estrategia;
+        leadsEcommerce.push(lead);
+      } else if (landingPages.FBK.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
+        estrategia = "FBK";
+        lead.estrategia = estrategia;
+        leadsEcommerce.push(lead);
+      } else {
+        if (leadSource.endsWith("SEM")) {
+          estrategia = "SEM";
+        } else if (leadSource.includes("SEO") || leadSource.includes("Blog")) {
+          estrategia = "SEO";
+        } else if (leadSource.includes("FBK")) {
+          estrategia = "FBK";
+        } else {
+          estrategia = "Otros";
+        }
+        lead.estrategia = estrategia;
+      }
+
+      if (leadSource === "LP-GYA") {
+        ramo = "Asociados - Galindo";
+      }
+
+      if (!agrupadoPorRamos[ramo]) {
+        agrupadoPorRamos[ramo] = {
+          total: 0,
+          SEM: 0,
+          SEO: 0,
+          FBK: 0,
+          otros: 0,
+          leads: []
+        };
+      }
+
+      agrupadoPorRamos[ramo].total++;
+      totalGeneral.total++;
+      if (estrategia === "SEM") {
+        agrupadoPorRamos[ramo].SEM++;
+        totalGeneral.SEM++;
+      } else if (estrategia === "SEO") {
+        agrupadoPorRamos[ramo].SEO++;
+        totalGeneral.SEO++;
+      } else if (estrategia === "FBK") {
+        agrupadoPorRamos[ramo].FBK++;
+        totalGeneral.FBK++;
+      } else {
+        agrupadoPorRamos[ramo].otros++;
+        totalGeneral.otros++;
+      }
+
+      agrupadoPorRamos[ramo].leads.push({
+        id: lead.id,
+        Full_Name: lead.Full_Name,
+        Estatus_Lead_Prospecto: lead.Estatus_Lead_Prospecto,
+        Telefono: lead.Mobile,
+        Created_Time: lead.Created_Time,
+        Lead_Source: leadSource || "N/A",
+        MKT_Campaigns: lead.MKT_Campaigns || "N/A",
+        estrategia: lead.estrategia || "N/A",
+        firstPage: lead.firstPage || "N/A"
+      });
+    });
+
+    // Estructura de historicoLeads ajustada para ser agrupada por ramo y estrategia
+    const agrupadoHistorico = {};  // Nueva estructura para leads históricos
+
+    // Llenamos los datos históricos (por ramo y estrategia)
+    leadsHistoricos.forEach(lead => {
+      let ramo = lead.Ramo || "Otros";  // Asignar un ramo si no está definido
+      let estrategia = ""; // Campo estrategia que asignaremos según el caso
+
+      // Asignamos la estrategia dependiendo del Lead_Source
+      if (lead.Lead_Source.endsWith("SEM")) {
+        estrategia = "SEM";
+      } else if (lead.Lead_Source.includes("SEO")) {
+        estrategia = "SEO";
+      } else if (lead.Lead_Source.includes("FBK")) {
+        estrategia = "FBK";
+      } else {
+        estrategia = "Otros";
+      }
+
+      // Inicializamos la estructura del ramo si no existe
+      if (!agrupadoHistorico[ramo]) {
+        agrupadoHistorico[ramo] = {
+          SEM: 0,
+          SEO: 0,
+          FBK: 0,
+          otros: 0,
+          leads: []
+        };
+      }
+
+      // Contabilizamos los leads por estrategia
+      if (estrategia === "SEM") agrupadoHistorico[ramo].SEM++;
+      if (estrategia === "SEO") agrupadoHistorico[ramo].SEO++;
+      if (estrategia === "FBK") agrupadoHistorico[ramo].FBK++;
+      if (estrategia === "Otros") agrupadoHistorico[ramo].otros++;
+
+      // Añadimos el lead al ramo correspondiente
+      agrupadoHistorico[ramo].leads.push(lead);
+    });
+
+    // Ahora agrupadoHistorico contiene los datos agrupados por ramo y estrategia
+
+    const response = {
+      message: "Notificación enviada",
+      rango: { fechaInicio , fechaFin },
+      total: leadsFiltrados.length,
+      totalGeneral: totalGeneral,
+      historicoLeads: historicoLeads,  // Aseguramos que historicoLeads está correctamente poblado
+      agrupadoPorRamos: agrupadoPorRamos,
+      leadsEcommerce: leadsEcommerce,
+      agrupadoHistorico: agrupadoHistorico
+    };
+
+    await enviarCorreo(response, NotificarMail, TipoNotificacion);
+
+    res.status(200).json(response);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Hubo un error al procesar la notificación",
+      error: error.message
+    });
+  }
+};
+
+// Notificación Diaria: Leads Sin Tocar
 export const NotificacionDiariaLeadsLC = async (req, res) => {
   const { TipoNotificacion, NotificarMail } = req.body;
 
