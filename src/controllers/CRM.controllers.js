@@ -85,7 +85,7 @@ export const NotificacionDiariaLeads = async (req, res) => {
   const currentDate = moment().tz('America/Mexico_City'); // Fecha y hora actual en CDMX
   const startOfMonth = currentDate.clone().startOf('month'); // Primer día del mes
   const endOfMonth = currentDate.clone().endOf('month'); // Último día del mes
-  console.log(currentDate)
+  
   if (TipoNotificacion === "Inicial") {
    // Configuramos fechaInicio para las 00:00 del día vigente en la zona horaria de CDMX
     fechaInicio = currentDate.clone().startOf('day'); // 00:00:00
@@ -317,7 +317,7 @@ export const NotificacionDiariaLeadsLC = async (req, res) => {
       const leadDate = moment(lead.Created_Time).tz('America/Mexico_City');
       return leadDate.isBetween(fechaInicio, fechaFin, null, '[]'); // Filtra por fecha solo si no es historico
     });
-    //console.log(filteredLeads)
+  
     // Llenamos los datos históricos de leads filtrados (todos los leads si es histórico)
     historicoLeads.total = leads.length;
     historicoLeads.SEM = leads.filter(lead => lead.Lead_Source.endsWith("SEM")).length;
@@ -484,8 +484,7 @@ async function getLeadsLC(token, vista) {
 
   // Crear la URL con las fechas dinámicamente
   const url = `https://www.zohoapis.com/crm/v7/Leads?cvid=${vista}`;
-  console.log(url)
-  console.log(token)
+  
   // Obtenemos todos los leads
   const leads = await fetchAllLeads(url, myHeaders);
 
@@ -535,12 +534,9 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
   } else if (TipoNotificacion === "Historico") {
     subject += " Histórico";  // Si es "Historico", se agrega "Histórico"
   }
-  console.log(NotificarMail);  // Verificar el valor booleano de NotificarMail
-
+ 
   const { agrupadoPorRamos,agrupadoHistorico, totalGeneral, historicoLeads, leadsEcommerce } = response;
-  console.log(totalGeneral);  // Mostrar el total general de leads
-  console.log(leadsEcommerce);  // Mostrar los leads leadsEcommerce
-  console.log(leadsEcommerce.length);  // Mostrar la cantidad de leads E-COMMERCE
+  
   // Crear el contenido HTML del correo
   let htmlContent = `
     <html lang="es">
