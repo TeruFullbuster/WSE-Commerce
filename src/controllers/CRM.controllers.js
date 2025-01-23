@@ -85,12 +85,14 @@ export const NotificacionDiariaLeads = async (req, res) => {
   const currentDate = moment().tz('America/Mexico_City'); // Fecha y hora actual en CDMX
   const startOfMonth = currentDate.clone().startOf('month'); // Primer día del mes
   const endOfMonth = currentDate.clone().endOf('month'); // Último día del mes
-
+  console.log(currentDate)
   if (TipoNotificacion === "Inicial") {
-    // Configuramos fechaInicio para las 00:00 del día anterior
-    fechaInicio = currentDate.clone().subtract(1, 'days').startOf('day');
-    // Configuramos fechaFin para las 23:59 del día anterior
-    fechaFin = currentDate.clone().subtract(1, 'days').endOf('day');
+   // Configuramos fechaInicio para las 00:00 del día vigente en la zona horaria de CDMX
+    fechaInicio = currentDate.clone().startOf('day'); // 00:00:00
+    fechaInicio = fechaInicio.format('YYYY-MM-DDTHH:mm:ss.SSSZ')
+  // Configuramos fechaFin para las 23:59 del día vigente en la zona horaria de CDMX
+    fechaFin = currentDate.clone().endOf('day'); // 23:59:59
+    fechaFin = fechaFin.format('YYYY-MM-DDTHH:mm:ss.SSSZ');
   } else if (TipoNotificacion === "Final") {
     // Configuramos fechaInicio para las 00:00 del día actual
     fechaInicio = currentDate.clone().startOf('day');
@@ -109,7 +111,7 @@ export const NotificacionDiariaLeads = async (req, res) => {
   try {
     const informacion = await getLeads(token, Vista);
     const leads = informacion.detallesSinTocar || [];
-    console.log(leads.length)
+
     const agrupadoPorRamos = {};
     const historicoLeads = { SEM: 0, SEO: 0, FBK: 0, otros: 0 }; // Inicializar el objeto historicoLeads
     const leadsEcommerce = [];
@@ -128,7 +130,7 @@ export const NotificacionDiariaLeads = async (req, res) => {
 
     // Llenamos los datos históricos
     historicoLeads.total = leadsHistoricos.length;
-    historicoLeads.SEM = leadsHistoricos.filter(lead => lead.Lead_Source.endsWith("SEM")).length;
+    historicoLeads.SEM = leadsHistoricos.filter(lead => lead.Lead_Source.includes("SEM")).length;
     historicoLeads.SEO = leadsHistoricos.filter(lead => lead.Lead_Source.includes("SEO")).length;
     historicoLeads.FBK = leadsHistoricos.filter(lead => lead.Lead_Source.includes("FBK")).length;
     historicoLeads.otros = leadsHistoricos.filter(lead => !lead.Lead_Source.includes("SEM") && !lead.Lead_Source.includes("SEO") && !lead.Lead_Source.includes("FBK")).length;
@@ -251,10 +253,11 @@ export const NotificacionDiariaLeads = async (req, res) => {
 
     const response = {
       message: "Notificación enviada",
+      rango: { fechaInicio , fechaFin },
       total: leadsFiltrados.length,
       totalGeneral: totalGeneral,
-      agrupadoPorRamos: agrupadoPorRamos,
       historicoLeads: historicoLeads,  // Aseguramos que historicoLeads está correctamente poblado
+      agrupadoPorRamos: agrupadoPorRamos,
       leadsEcommerce: leadsEcommerce,
       agrupadoHistorico: agrupadoHistorico
     };
@@ -763,11 +766,11 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
   // Si NotificarMail es true, enviamos el correo
   const mailOptions = {
     from: 'aruiz@segurointeligente.mx',
-    to: 'aruiz@siaqs.com',  // Destinatarios del correo
-    cc: ['ehernandez@segurointeligente.mx','eescoto@segurointeligente.mx', 'cguzman@segurointeligente.mx', 
-      'lalonso@segurointeligente.mx','mgarcia@segurointeligente.mx','aescamilla@segurointeligente.mx',
-      'ygarcia@segurointeligente.mx', 'lleon@segurointeligente.mx', 'ilince@segurointeligente.mx','ahernandez@gmag.com.mx', 'jgarma@segurointeligente.mx'],
-    cco: 'terufullbustee@gmail.com',
+    to: ['aruiz@siaqs.com','eescoto@segurointeligente.mx'],  // Destinatarios del correo
+    //cc: ['ehernandez@segurointeligente.mx','eescoto@segurointeligente.mx', 'cguzman@segurointeligente.mx', 
+    // 'lalonso@segurointeligente.mx','mgarcia@segurointeligente.mx','aescamilla@segurointeligente.mx',
+    //  'ygarcia@segurointeligente.mx', 'lleon@segurointeligente.mx', 'ilince@segurointeligente.mx','ahernandez@gmag.com.mx', 'jgarma@segurointeligente.mx'],
+    //cco: 'terufullbustee@gmail.com',
     subject: subject,
     html: htmlContent
   };
@@ -997,11 +1000,13 @@ const landingPages = {
   SEM: [
     "https://segurointeligente.mx/landingpages/QUALITAS/",
     "https://segurointeligente.mx/landingpages/AXA/",
-    "https://segurointeligente.mx/seguro-autos/"
+    "https://segurointeligente.mx/seguro-autos/",
+    "https://segurointeligente.mx/landingpages/GNP/"
     // Puedes agregar más LPs aquí para SEM
   ],
   SEO: [
-    "https://segurointeligente.mx/qualitas-seguros/", // Ejemplo de LP para SEO
+    "https://segurointeligente.mx/qualitas-seguros/",
+    "https://segurointeligente.mx/chubb-seguros/"
     // Puedes agregar más LPs aquí para SEO
   ],
   FBK: [
