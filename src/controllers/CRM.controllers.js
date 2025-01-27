@@ -235,6 +235,7 @@ export const NotificacionDiariaLeads = async (req, res) => {
           SEO: 0,
           FBK: 0,
           otros: 0,
+          total: lead.length,
           leads: []
         };
       }
@@ -248,7 +249,7 @@ export const NotificacionDiariaLeads = async (req, res) => {
       // Añadimos el lead al ramo correspondiente
       agrupadoHistorico[ramo].leads.push(lead);
     });
-
+    console.log(agrupadoHistorico)
     // Ahora agrupadoHistorico contiene los datos agrupados por ramo y estrategia
 
     const response = {
@@ -285,10 +286,10 @@ export const NotificacionDiariaLeadsSimple = async (req, res) => {
   const endOfMonth = currentDate.clone().endOf('month'); // Último día del mes
   
   if (TipoNotificacion === "Inicial") {
-   // Configuramos fechaInicio para las 00:00 del día vigente en la zona horaria de CDMX
+    // Configuramos fechaInicio para las 00:00 del día vigente en la zona horaria de CDMX
     fechaInicio = currentDate.clone().startOf('day'); // 00:00:00
     fechaInicio = fechaInicio.format('YYYY-MM-DDTHH:mm:ss.SSSZ')
-  // Configuramos fechaFin para las 23:59 del día vigente en la zona horaria de CDMX
+    // Configuramos fechaFin para las 23:59 del día vigente en la zona horaria de CDMX
     fechaFin = currentDate.clone().endOf('day'); // 23:59:59
     fechaFin = fechaFin.format('YYYY-MM-DDTHH:mm:ss.SSSZ');
   } else if (TipoNotificacion === "Final") {
@@ -333,6 +334,44 @@ export const NotificacionDiariaLeadsSimple = async (req, res) => {
     historicoLeads.FBK = leadsHistoricos.filter(lead => lead.Lead_Source.includes("FBK")).length;
     historicoLeads.otros = leadsHistoricos.filter(lead => !lead.Lead_Source.includes("SEM") && !lead.Lead_Source.includes("SEO") && !lead.Lead_Source.includes("FBK")).length;
 
+    // Agregar los leads agrupados por "Agente" y "Ventas" para el día
+    const leadsAgentes = {}; // Agrupado por Ramo y Estrategia
+    const leadsVentas = {}; // Agrupado por Ramo y Estrategia
+
+    // Agregar los leads agrupados por "Agente" y "Ventas" para el histórico
+    const leadsAgentesHistoricos = {}; // Agrupado por Ramo y Estrategia
+    const leadsVentasHistoricos = {}; // Agrupado por Ramo y Estrategia
+
+    
+    const agregarLeadAlGrupo = (grupo, ramo, estrategia, lead) => {
+      console.log(lead);
+      
+      // Si no existe el ramo en el grupo, inicializamos su estructura.
+      if (!grupo[ramo]) {
+        grupo[ramo] = {
+          SEM: 0,
+          SEO: 0,
+          FBK: 0,
+          otros: 0,
+          total: 0, // Inicializamos el total como número
+          leads: []  // Para almacenar los leads asociados a este ramo
+        };
+      }
+    
+      // Incrementamos el contador según la estrategia.
+      if (estrategia === "SEM") grupo[ramo].SEM++;
+      if (estrategia === "SEO") grupo[ramo].SEO++;
+      if (estrategia === "FBK") grupo[ramo].FBK++;
+      if (estrategia === "Otros") grupo[ramo].otros++;
+    
+      // Incrementamos el total de leads para este ramo.
+      grupo[ramo].total++; // Incrementa el total por cada lead agregado.
+    
+      // Agregamos el lead a la lista de leads para este ramo.
+      grupo[ramo].leads.push(lead);
+    };
+    
+
     leadsFiltrados.forEach(lead => {
       let ramo = lead.Ramo || "Otros";
       let leadSource = lead.Lead_Source || "";
@@ -367,46 +406,59 @@ export const NotificacionDiariaLeadsSimple = async (req, res) => {
         ramo = "Asociados - Galindo";
       }
 
-      if (!agrupadoPorRamos[ramo]) {
-        agrupadoPorRamos[ramo] = {
-          total: 0,
-          SEM: 0,
-          SEO: 0,
-          FBK: 0,
-          otros: 0,
-          leads: []
-        };
-      }
+      // Agrupamos los leads en el agrupadoPorRamos
+      agregarLeadAlGrupo(agrupadoPorRamos, ramo, estrategia, lead);
 
-      agrupadoPorRamos[ramo].total++;
-      totalGeneral.total++;
-      if (estrategia === "SEM") {
-        agrupadoPorRamos[ramo].SEM++;
-        totalGeneral.SEM++;
-      } else if (estrategia === "SEO") {
-        agrupadoPorRamos[ramo].SEO++;
-        totalGeneral.SEO++;
-      } else if (estrategia === "FBK") {
-        agrupadoPorRamos[ramo].FBK++;
-        totalGeneral.FBK++;
-      } else {
-        agrupadoPorRamos[ramo].otros++;
-        totalGeneral.otros++;
+      // Agrupamos los leads para Agentes y Ventas
+      if (lead.GRUPO === "Agente") {
+        agregarLeadAlGrupo(leadsAgentes, ramo, estrategia, lead);
+      } else if (lead.GRUPO === "Ventas") {
+        agregarLeadAlGrupo(leadsVentas, ramo, estrategia, lead);
       }
-
-      agrupadoPorRamos[ramo].leads.push({
-        id: lead.id,
-        Full_Name: lead.Full_Name,
-        Estatus_Lead_Prospecto: lead.Estatus_Lead_Prospecto,
-        Telefono: lead.Mobile,
-        Created_Time: lead.Created_Time,
-        Lead_Source: leadSource || "N/A",
-        MKT_Campaigns: lead.MKT_Campaigns || "N/A",
-        estrategia: lead.estrategia || "N/A",
-        firstPage: lead.firstPage || "N/A"
-      });
     });
 
+    // Ahora procesamos los leads históricos de Agentes y Ventas
+    leadsHistoricos.forEach(lead => {
+      let ramo = lead.Ramo || "Otros";
+      let leadSource = lead.Lead_Source || "";
+      let estrategia = "";
+
+      if (landingPages.SEM.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
+        estrategia = "SEM";
+      } else if (landingPages.SEO.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
+        estrategia = "SEO";
+      } else if (landingPages.FBK.some(lp => lead.firstPage && lead.firstPage.includes(lp)) && leadSource.includes("E-COMMERCE")) {
+        estrategia = "FBK";
+      } else {
+        if (leadSource.endsWith("SEM")) {
+          estrategia = "SEM";
+        } else if (leadSource.includes("SEO") || leadSource.includes("Blog")) {
+          estrategia = "SEO";
+        } else if (leadSource.includes("FBK")) {
+          estrategia = "FBK";
+        } else {
+          estrategia = "Otros";
+        }
+      }
+
+      if (leadSource === "LP-GYA") {
+        ramo = "Asociados - Galindo";
+      }
+
+      // Agrupamos los leads históricos en Agentes y Ventas
+      if (lead.GRUPO === "Agente") {
+        agregarLeadAlGrupo(leadsAgentesHistoricos, ramo, estrategia, lead);
+      } else if (lead.GRUPO === "Ventas") {
+        agregarLeadAlGrupo(leadsVentasHistoricos, ramo, estrategia, lead);
+      }
+    });
+
+    // Actualizar totalGeneral con los totales del día
+    totalGeneral.total = leadsFiltrados.length;
+    totalGeneral.SEM = leadsFiltrados.filter(lead => lead.Lead_Source.includes("SEM")).length;
+    totalGeneral.SEO = leadsFiltrados.filter(lead => lead.Lead_Source.includes("SEO")).length;
+    totalGeneral.FBK = leadsFiltrados.filter(lead => lead.Lead_Source.includes("FBK")).length;
+    totalGeneral.otros = leadsFiltrados.filter(lead => !lead.Lead_Source.includes("SEM") && !lead.Lead_Source.includes("SEO") && !lead.Lead_Source.includes("FBK")).length;
     // Estructura de historicoLeads ajustada para ser agrupada por ramo y estrategia
     const agrupadoHistorico = {};  // Nueva estructura para leads históricos
 
@@ -433,6 +485,7 @@ export const NotificacionDiariaLeadsSimple = async (req, res) => {
           SEO: 0,
           FBK: 0,
           otros: 0,
+          total: lead.length,
           leads: []
         };
       }
@@ -447,8 +500,6 @@ export const NotificacionDiariaLeadsSimple = async (req, res) => {
       agrupadoHistorico[ramo].leads.push(lead);
     });
 
-    // Ahora agrupadoHistorico contiene los datos agrupados por ramo y estrategia
-
     const response = {
       message: "Notificación enviada",
       rango: { fechaInicio , fechaFin },
@@ -456,8 +507,12 @@ export const NotificacionDiariaLeadsSimple = async (req, res) => {
       totalGeneral: totalGeneral,
       historicoLeads: historicoLeads,  // Aseguramos que historicoLeads está correctamente poblado
       agrupadoPorRamos: agrupadoPorRamos,
+      agrupadoHistorico:agrupadoHistorico,
       leadsEcommerce: leadsEcommerce,
-      agrupadoHistorico: agrupadoHistorico
+      leadsAgentes: leadsAgentes,  // Ahora los leads de Agentes agrupados por Ramo y Estrategia
+      leadsVentas: leadsVentas,   // Ahora los leads de Ventas agrupados por Ramo y Estrategia
+      leadsHistoricosAgentes: leadsAgentesHistoricos, // Nuevos leads históricos de Agentes
+      leadsHistoricosVentas: leadsVentasHistoricos // Nuevos leads históricos de Ventas
     };
 
     await enviarCorreo(response, NotificarMail, TipoNotificacion);
@@ -471,6 +526,7 @@ export const NotificacionDiariaLeadsSimple = async (req, res) => {
     });
   }
 };
+
 
 // Notificación Diaria: Leads Sin Tocar
 export const NotificacionDiariaLeadsLC = async (req, res) => {
@@ -576,11 +632,11 @@ export const NotificacionDiariaLeadsLC = async (req, res) => {
 
     // Actualizar totalGeneral con los totales del día
     totalGeneral.total = filteredLeads.length;
-    totalGeneral.SEM = filteredLeads.filter(lead => lead.Lead_Source.endsWith("SEM")).length;
+    totalGeneral.SEM = filteredLeads.filter(lead => lead.Lead_Source.includes("SEM")).length;
     totalGeneral.SEO = filteredLeads.filter(lead => lead.Lead_Source.includes("SEO")).length;
     totalGeneral.FBK = filteredLeads.filter(lead => lead.Lead_Source.includes("FBK")).length;
     totalGeneral.otros = filteredLeads.filter(lead => !lead.Lead_Source.includes("SEM") && !lead.Lead_Source.includes("SEO") && !lead.Lead_Source.includes("FBK")).length;
-
+    console.log(totalGeneral)
     // Preparamos la respuesta para ser enviada al correo
     const response = {
       message: "Notificación enviada",
@@ -732,11 +788,11 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
   } else if (TipoNotificacion === "Historico") {
     subject += " Histórico";  // Si es "Historico", se agrega "Histórico"
   }
- 
-  const { agrupadoPorRamos,agrupadoHistorico, totalGeneral, historicoLeads, leadsEcommerce } = response;
+
+  const { agrupadoPorRamos, agrupadoHistorico, totalGeneral, historicoLeads, leadsEcommerce, leadsAgentes, leadsVentas, leadsHistoricosAgentes,leadsHistoricosVentas } = response;
   
   // Crear el contenido HTML del correo
-  let htmlContent = `
+  let htmlContent = ` 
     <html lang="es">
       <head>
         <meta charset="UTF-8">
@@ -775,40 +831,39 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
         <td>${ramoData.otros}</td>
       </tr>`;
   }
-  
-    htmlContent += `</table>`;
 
-    // Resumen Histórico de Leads Sin Tocar
+  htmlContent += `</table>`;
+
+  // Resumen Histórico de Leads Sin Tocar
   htmlContent += `<h3>Total de Leads Sin Tocar Histórico (Mes): <span class="total">${historicoLeads.total}</span></h3>
   <table class="table">
     <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
 
   // Agregar los resúmenes por ramo históricos desde agrupadoHistorico
   for (const ramo in agrupadoHistorico) {
-  const ramoData = agrupadoHistorico[ramo];
-  htmlContent += `
-    <tr>
-      <td>${ramo}</td>
-      <td>${ramoData.SEM + ramoData.SEO + ramoData.FBK + ramoData.otros}</td>
-      <td>${ramoData.SEM}</td>
-      <td>${ramoData.SEO}</td>
-      <td>${ramoData.FBK}</td>
-      <td>${ramoData.otros}</td>
-    </tr>`;
+    const ramoData = agrupadoHistorico[ramo];
+    htmlContent += `
+      <tr>
+        <td>${ramo}</td>
+        <td>${ramoData.SEM + ramoData.SEO + ramoData.FBK + ramoData.otros}</td>
+        <td>${ramoData.SEM}</td>
+        <td>${ramoData.SEO}</td>
+        <td>${ramoData.FBK}</td>
+        <td>${ramoData.otros}</td>
+      </tr>`;
   }
 
   htmlContent += `</table>`;
 
-
-  // E-commerce: Resumen por Estrategia (Si existen Leads de E-commerce)
+  // Detalles de los leads E-commerce
   if (leadsEcommerce.length > 0) {
     htmlContent += `<h3>Total de Leads E-commerce (Día): <span class="total">${leadsEcommerce.length}</span></h3>`;
-
-    // E-commerce: Agrupar por Ramo y Estrategia (SEM, SEO, FBK)
+    
+    // E-commerce: Agrupar por Ramo y Estrategia
     const agrupadoEcommerce = {};
     leadsEcommerce.forEach(lead => {
-      let ramo = lead.Ramo || "Otros";  // Asignamos un ramo si no está definido
-      let estrategia = lead.estrategia || "Otros";  // Usamos el campo 'estrategia' que definimos previamente
+      let ramo = lead.Ramo || "Otros"; 
+      let estrategia = lead.estrategia || "Otros";
 
       if (!agrupadoEcommerce[ramo]) {
         agrupadoEcommerce[ramo] = {
@@ -820,19 +875,17 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
         };
       }
 
-      // Contabilizamos los leads por estrategia
       if (estrategia === "SEM") agrupadoEcommerce[ramo].SEM++;
       if (estrategia === "SEO") agrupadoEcommerce[ramo].SEO++;
       if (estrategia === "FBK") agrupadoEcommerce[ramo].FBK++;
       if (estrategia === "Otros") agrupadoEcommerce[ramo].otros++;
 
-      // Añadimos el lead al ramo correspondiente
       agrupadoEcommerce[ramo].leads.push(lead);
     });
+
     htmlContent += `<table class="table">
     <tr><th>Ramo</th><th>Total</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
 
-    // Agregar los resúmenes por ramo y estrategia de E-commerce
     for (const ramo in agrupadoEcommerce) {
       const ramoData = agrupadoEcommerce[ramo];
       htmlContent += `
@@ -847,14 +900,11 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
     }
 
     htmlContent += `</table>`;
-
-    // Detalles de los leads E-commerce
-    htmlContent += `<h3>Detalles de los Leads E-commerce (Día):</h3>`;
     htmlContent += `<table class="table">
-      <tr><th>ID</th><th>Nombre</th><th>Lead Source</th><th>MKT Campaigns</th><th>Fecha de Creación</th></tr>`;
+        <tr><th>ID</th><th>Nombre</th><th>Lead Source</th><th>MKT Campaigns</th><th>Fecha de Creación</th></tr>`;
 
-    // Iteramos por los leads de E-commerce
-    leadsEcommerce.forEach(lead => {
+    console.log(agrupadoEcommerce.AUTOMOVILES.leads);
+    agrupadoEcommerce.AUTOMOVILES.leads.forEach(lead => {
       htmlContent += `
         <tr>
           <td>${lead.id}</td>
@@ -864,14 +914,95 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
           <td>${lead.Created_Time}</td>
         </tr>`;
     });
-
     htmlContent += `</table>`;
   } else {
     htmlContent += `<p>No hay datos de E-commerce para el Día.</p>`;
   }
-    // Aquí finaliza E-Commerce
-   // Detalles de los Leads del Día que no han sido tocados, por ramo y estrategia
-  htmlContent += `<h3>Detalles de los Leads Sin Tocar (Día) por Ramo y Estrategia:</h3>`;
+
+  // Agregar tabla de Agentes (por Estrategia)
+  htmlContent += `<h3>Resumen de Leads Agentes (Día) por Estrategia:</h3>`;
+  htmlContent += `<table class="table">
+    <tr><th>Ramo</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+
+  // Resumen de leadsAgentes por Ramo y Estrategia
+  for (const ramo in leadsAgentes) {
+    const ramoData = leadsAgentes[ramo];
+    htmlContent += `
+      <tr>
+        <td>${ramo}</td>
+        <td>${ramoData.SEM}</td>
+        <td>${ramoData.SEO}</td>
+        <td>${ramoData.FBK}</td>
+        <td>${ramoData.otros}</td>
+      </tr>`;
+  }
+
+  htmlContent += `</table>`;
+
+  // Agregar tabla de Agentes (por Estrategia)
+  htmlContent += `<h3>Resumen de Leads Agentes (Mes) por Estrategia:</h3>`;
+  htmlContent += `<table class="table">
+    <tr><th>Ramo</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+
+  // Resumen de leadsAgentes por Ramo y Estrategia
+  for (const ramo in leadsHistoricosAgentes) {
+    const ramoData = leadsHistoricosAgentes[ramo];
+    htmlContent += `
+      <tr>
+        <td>${ramo}</td>
+        <td>${ramoData.SEM}</td>
+        <td>${ramoData.SEO}</td>
+        <td>${ramoData.FBK}</td>
+        <td>${ramoData.otros}</td>
+      </tr>`;
+  }
+
+  htmlContent += `</table>`;
+
+  // Agregar tabla de Ventas (por Estrategia)
+  htmlContent += `<h3>Resumen de Leads Ventas (Día) por Estrategia:</h3>`;
+  htmlContent += `<table class="table">
+    <tr><th>Ramo</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+
+  // Resumen de leadsVentas por Ramo y Estrategia
+  for (const ramo in leadsVentas) {
+    const ramoData = leadsVentas[ramo];
+    htmlContent += `
+      <tr>
+        <td>${ramo}</td>
+        <td>${ramoData.SEM}</td>
+        <td>${ramoData.SEO}</td>
+        <td>${ramoData.FBK}</td>
+        <td>${ramoData.otros}</td>
+      </tr>`;
+  }
+
+  htmlContent += `</table>`;
+
+  // Agregar tabla de Ventas (por Estrategia)
+  htmlContent += `<h3>Resumen de Leads Ventas (Mes) por Estrategia:</h3>`;
+  htmlContent += `<table class="table">
+    <tr><th>Ramo</th><th>SEM</th><th>SEO</th><th>FBK</th><th>Otros</th></tr>`;
+
+  // Resumen de leadsVentas por Ramo y Estrategia
+  for (const ramo in leadsHistoricosVentas) {
+    const ramoData = leadsHistoricosVentas[ramo];
+    htmlContent += `
+      <tr>
+        <td>${ramo}</td>
+        <td>${ramoData.SEM}</td>
+        <td>${ramoData.SEO}</td>
+        <td>${ramoData.FBK}</td>
+        <td>${ramoData.otros}</td>
+      </tr>`;
+  }
+
+  htmlContent += `</table>`;
+  
+
+  // Detalle de los Leads del Día por Estrategia y Ramo (Después de las tablas de Agentes y Ventas)
+  htmlContent += `<h3>Detalles de los Leads del Día por Ramo y Estrategia:</h3>`;
+
 
   // Iteramos por los ramos para mostrar los leads organizados por Estrategia
   for (const ramo in agrupadoPorRamos) {
@@ -949,8 +1080,6 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
 
   htmlContent += `</table>`;
 
-  
-
   // Si NotificarMail es false, no enviamos el correo, solo retornamos
   if (!NotificarMail) {
     console.log("Correo armado pero no enviado, NotificarMail es false.");
@@ -960,11 +1089,11 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
   // Si NotificarMail es true, enviamos el correo
   const mailOptions = {
     from: 'aruiz@segurointeligente.mx',
-    to: ['aruiz@siaqs.com','eescoto@segurointeligente.mx'],  // Destinatarios del correo
+    to: ['aruiz@siaqs.com'],  // Destinatarios del correo
     cc: ['ehernandez@segurointeligente.mx','eescoto@segurointeligente.mx', 'cguzman@segurointeligente.mx', 
-    'lalonso@segurointeligente.mx','mgarcia@segurointeligente.mx','aescamilla@segurointeligente.mx',
-    'ygarcia@segurointeligente.mx', 'lleon@segurointeligente.mx', 'ilince@segurointeligente.mx','ahernandez@gmag.com.mx', 'jgarma@segurointeligente.mx'],
-    cco: 'terufullbustee@gmail.com',
+      'lalonso@segurointeligente.mx','mgarcia@segurointeligente.mx','aescamilla@segurointeligente.mx',
+      'ygarcia@segurointeligente.mx', 'lleon@segurointeligente.mx', 'ilince@segurointeligente.mx',
+      'ahernandez@gmag.com.mx', 'jgarma@segurointeligente.mx','vhernandez@segurointeligente.mx', 'mperez@segurointeligente.mx'],
     subject: subject,
     html: htmlContent
   };

@@ -1559,14 +1559,14 @@ const getMSIDataFromDB = async (idCIa) => {
         const [rows] = await pool.query(`
             CALL GetAseguradorasConMSI(${idCIa});
         `);
-
+            
         // Verificamos que rows tenga datos
         if (rows.length > 0) {
             const row = rows[0];  // Accedemos al primer registro
-
+            console.log(row);
             // Extraemos solo el campo MSI y lo convertimos a mayúsculas
             const msiList = row[0].msi ? row[0].msi.toUpperCase().split(',').map(msi => msi.trim()) : [];
-            
+            console.log(msiList)
             // Extraemos los bancos participantes y los convertimos en mayúsculas
             const bancosParticipantes = row[0].bancos_participantes ? row[0].bancos_participantes.toUpperCase() : "";
             
