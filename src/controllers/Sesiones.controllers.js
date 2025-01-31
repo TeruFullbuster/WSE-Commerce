@@ -682,7 +682,8 @@ async function postProspect(prospect, token) {
             "RFC": prospect.RFC || "N/A",
             "direccion": prospect.direccion_completa || "N/A",
             "mkT_Campaigns": prospect.utm && prospect.utm !== "N/A" ? prospect.utm : "",
-            "GCLID": prospect.gclid && prospect.gclid !== "N/A" ? prospect.gclid : ""
+            "GCLID": prospect.gclid && prospect.gclid !== "N/A" ? prospect.gclid : "",
+            "IPSesion": prospect.ipSesion || ""
         }
     });
 
