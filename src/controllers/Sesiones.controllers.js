@@ -1014,8 +1014,11 @@ export const GetCotID = async (req, res) => {
             return res.status(401).json({ message: 'Token inválido o expirado' });
         }
 
-        // Llamar al procedimiento almacenado pasando el id como parámetro
-        const [rows] = await pool.query('CALL FetchProspectID(?)', [id]);
+        // Usamos la función getOriginalIdFromHash para obtener el original_id
+        const originalId = await getOriginalIdFromHash(id);  // Obtener el original_id a partir del hash
+
+        // Llamar al procedimiento almacenado pasando el original_id como parámetro
+        const [rows] = await pool.query('CALL FetchProspectID(?)', [originalId]);
  
          // Verificar si rows tiene datos y si el primer registro tiene información válida
          if (rows.length === 0 || !rows[0][0]) {
@@ -1055,7 +1058,7 @@ export const GetCotID = async (req, res) => {
                 }
 
                 // Actualizar la base de datos con el idCIA obtenido
-                await pool.query('UPDATE SesionesFantasma SET idCIA = ? WHERE id = ?', [idCIA, id]);
+                await pool.query('UPDATE SesionesFantasma SET idCIA = ? WHERE id = ?', [idCIA, originalId]);
 
             }
             console.log("IDCIA:", idCIA);
@@ -1074,7 +1077,7 @@ export const GetCotID = async (req, res) => {
 
                 console.log("Nuevo idCotMAG:", cotizacionId);
                 // Actualizar la base de datos con el idCIA obtenido
-                await pool.query('UPDATE SesionesFantasma SET idCotMAG = ?, precio_cotizacion = ?, descripcion = ? WHERE id = ?', [cotizacionId, precioCotizacion, finalDescripcion, id]);
+                await pool.query('UPDATE SesionesFantasma SET idCotMAG = ?, precio_cotizacion = ?, descripcion = ? WHERE id = ?', [cotizacionId, precioCotizacion, finalDescripcion, originalId]);
 
             } else {
                 // Si idCotMAG es válido, simplemente asignamos el precio y descripción desde el body
@@ -1105,7 +1108,7 @@ export const GetCotID = async (req, res) => {
                 }
 
                 // Actualizar la base de datos con la descripción obtenida
-                await pool.query('UPDATE SesionesFantasma SET descripcion = ? WHERE id = ?', [finalDescripcion, id]);
+                await pool.query('UPDATE SesionesFantasma SET descripcion = ? WHERE id = ?', [finalDescripcion, originalId]);
             }
             console.log("IDCIA:", idCIA);
 
@@ -1138,7 +1141,7 @@ export const GetCotID = async (req, res) => {
                      console.log(getIDProdCR.response)
                     idProdCR = getIDProdCR.response.idProdCR;
                      // Actualizar la base de datos con el idCIA obtenido
-                await pool.query('UPDATE SesionesFantasma SET idProdCR = ? WHERE id = ?', [idProdCR, id]);
+                await pool.query('UPDATE SesionesFantasma SET idProdCR = ? WHERE id = ?', [idProdCR, originalId]);
                 }else{
                     console.log("idProdCR Existente, no se actualiza");
                 }
