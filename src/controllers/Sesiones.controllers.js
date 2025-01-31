@@ -170,7 +170,8 @@ const ObtenerResource = (Origen) =>{
 }
 
 export const createProspecto = async (req, res) => {
-    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, leadsource, aseguradoraCampana, firstPage, isComparator, idGrupo } = req.body;
+    const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, 
+        gclid, utm, leadsource, aseguradoraCampana, firstPage, isComparator, idGrupo, ipSesion } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
 
@@ -179,7 +180,7 @@ export const createProspecto = async (req, res) => {
     try {
         // Construir la consulta SQL dinámicamente
         let query = 'INSERT INTO SesionesFantasma (marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoracampana, firstPage' ;
-        let values = [marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana || '', firstPage];
+        let values = [marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana || '', firstPage, ipSesion];
 
         // Solo agregar descripcion si está presente y no es vacía
         if (descripcion && descripcion.trim() !== '') {
@@ -197,6 +198,12 @@ export const createProspecto = async (req, res) => {
         if (idGrupo && idGrupo.trim() !== '') {
             query += ', idGrupo'; // Añadir idGrupo al query
             values.push(idGrupo);  // Añadir idGrupo al array de valores
+        }
+
+        // Solo agregar idGrupo si está presente y no es vacía
+        if (ipSesion && ipSesion.trim() !== '') {
+            query += ', ipSesion'; // Añadir idGrupo al query
+            values.push(ipSesion);  // Añadir idGrupo al array de valores
         }
 
         // Cerrar la parte de columnas y añadir los placeholders para los valores
@@ -966,6 +973,8 @@ export const GetCotID = async (req, res) => {
             let cotizacionId = data.idCotMAG; // Valor inicial de idCotMAG
             let precioCotizacion = null;
             let descripcionCompleta = data.descripcion; // Inicialmente usando el valor de descripcion del body
+            let idProdCR = data.idProdCR; // Valor inicial de idProdCR
+
             console.log(cotizacionId)
              // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
              let finalDescripcion = data.descripcion;
@@ -1006,13 +1015,14 @@ export const GetCotID = async (req, res) => {
                 const Cotizacion = await GetCotiAseg2(Token.token, data, idCIA)
 
                 precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el valor de primaTotal a precioCotizacion
-                descripcionCompleta = Cotizacion.response.cotizacionInfo[0].descripcion; // Asignar el valor de descripcion a descripcionCompleta
-
                 cotizacionId = Cotizacion.response.cotizacionInfo[0].id; // Asignar el nuevo idCotMAG de la cotización
                 precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el nuevo idCotMAG de la cotización
+                finalDescripcion = Cotizacion.response.cotizacionInfo[0].descripcion; // Asignar el nuevo idCotMAG de la cotización
+
                 console.log("Nuevo idCotMAG:", cotizacionId);
                 // Actualizar la base de datos con el idCIA obtenido
-                await pool.query('UPDATE SesionesFantasma SET idCotMAG = ?, precio_cotizacion = ? WHERE id = ?', [cotizacionId, precioCotizacion, id]);
+                await pool.query('UPDATE SesionesFantasma SET idCotMAG = ?, precio_cotizacion = ?, descripcion = ? WHERE id = ?', [cotizacionId, precioCotizacion, finalDescripcion, id]);
+
             } else {
                 // Si idCotMAG es válido, simplemente asignamos el precio y descripción desde el body
                 precioCotizacion = precioCotizacion || 0; // Valor por defecto si no se obtiene un precio
@@ -1045,8 +1055,7 @@ export const GetCotID = async (req, res) => {
                 await pool.query('UPDATE SesionesFantasma SET descripcion = ? WHERE id = ?', [finalDescripcion, id]);
             }
             console.log("IDCIA:", idCIA);
-            // Verificar si necesitamos obtener el idCIA si no está disponible
-            
+
             //Armamos datos para recotizacion
             let Descriptiones = [];
             if (data.isComparator === "1") {
@@ -1065,7 +1074,25 @@ export const GetCotID = async (req, res) => {
                 const filteredDescriptions = descriptions.filter(aseguradoraData => aseguradoraData.aseguradora === data.aseguradora);
                 Descriptiones = filteredDescriptions;
             }
-
+            console.log("idProdCR:", idProdCR);
+            console.log("idCotMAG:", cotizacionId);
+            if ( idProdCR === null || idProdCR === "null" || idProdCR === "" || idProdCR === 0 || idProdCR === "0" || idProdCR === " ") {
+                if(cotizacionId != null || cotizacionId != "null" || cotizacionId != "" || cotizacionId != 0 || cotizacionId != "0" || cotizacionId != " "){
+                    const Token = await GetTokenMAG();
+                    console.log("Token obtenido:", Token);
+                    const getIDProdCR = await GetInfoCotizacionID(Token.token, cotizacionId);
+                     console.log(getIDProdCR)
+                     console.log(getIDProdCR.response)
+                    idProdCR = getIDProdCR.response.idProdCR;
+                     // Actualizar la base de datos con el idCIA obtenido
+                await pool.query('UPDATE SesionesFantasma SET idProdCR = ? WHERE id = ?', [idProdCR, id]);
+                }else{
+                    console.log("idProdCR Existente, no se actualiza");
+                }
+                
+            }else{
+                console.log("No se actualiza el idProdCR, obteniendo nuevo idProdCR");
+            }
             // Organizar los datos en diferentes secciones
             const response = {
                 message: "OK",
@@ -1088,7 +1115,6 @@ export const GetCotID = async (req, res) => {
                     cevic: data.cevic,
                     descripcion: finalDescripcion,  // Aquí usamos la descripcion final que puede ser obtenida o no desde la API
                     Prima_Total: data.precio_cotizacion,
-                    num_cotizacion: data.num_cotizacion,
                     placa: data.placa,
                     num_motor: data.num_motor,
                     Cotizacion_ID: cotizacionId
@@ -1096,9 +1122,10 @@ export const GetCotID = async (req, res) => {
                 Aseguradora:{
                     Aseguradora: data.aseguradoracampana,
                     idCia: idCIA,
-                    "isComparator": data.isComparator,
-                    "Grupo": data.idGrupo,
-                    "Versiones": Descriptiones
+                    idProdCR: idProdCR,
+                    isComparator: data.isComparator,
+                    Grupo: data.idGrupo,
+                    Versiones: Descriptiones
                 },
                 domicilio: {
                     codigo_postal: data.codigo_postal,
@@ -1463,94 +1490,93 @@ try {
 };
 
 const GetBancosRel = async (token, idCia) => {
-    const myHeaders = new Headers();
-    myHeaders.append("Authorization", `Bearer ${token}`);
-    console.log(token);
-    console.log(idCia);
-    const requestOptions = {
-      method: "GET",
-      headers: myHeaders,
-      redirect: "follow"
-    };
-  
-    try {
-      // Utilizamos await para esperar la respuesta de la solicitud fetch
-      const response = await fetch(`https://apis.segurointeligente.mx/api/Catalogos/BancosRel/${idCia}`, requestOptions);
-        console.log(response)
-      // Verificamos si la respuesta es exitosa
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-  
-      // Parseamos la respuesta a JSON
-      const result = await response.json();
-      
-      // Mostramos el resultado
-      console.log(result);
-      return result; // Opcional, si necesitas retornar el resultado
-  
-    } catch (error) {
-      console.error('Error en la solicitud:', error);
+const myHeaders = new Headers();
+myHeaders.append("Authorization", `Bearer ${token}`);
+console.log(token);
+console.log(idCia);
+const requestOptions = {
+    method: "GET",
+    headers: myHeaders,
+    redirect: "follow"
+};
+
+try {
+    // Utilizamos await para esperar la respuesta de la solicitud fetch
+    const response = await fetch(`https://apis.segurointeligente.mx/api/Catalogos/BancosRel/${idCia}`, requestOptions);
+    console.log(response)
+    // Verificamos si la respuesta es exitosa
+    if (!response.ok) {
+    throw new Error(`HTTP error! Status: ${response.status}`);
     }
-  };
-  
 
-  export const GetMSIxBanco = async (req, res) => {
-    const { idCIa } = req.params;
-    console.log("idCIa:", idCIa);
+    // Parseamos la respuesta a JSON
+    const result = await response.json();
+    
+    // Mostramos el resultado
+    console.log(result);
+    return result; // Opcional, si necesitas retornar el resultado
 
-    try {
-        // Paso 1: Obtener el token
-        const token = await GetTokenMAG();
+} catch (error) {
+    console.error('Error en la solicitud:', error);
+}
+};
 
-        // Paso 2: Obtener los bancos de la API
-        const resultadobancos = await GetBancosRel(token.token, idCIa);
+export const GetMSIxBanco = async (req, res) => {
+const { idCIa } = req.params;
+console.log("idCIa:", idCIa);
 
-        // Paso 3: Obtener los MSI de la base de datos usando el SP
-        const msiData = await getMSIDataFromDB(idCIa);
+try {
+    // Paso 1: Obtener el token
+    const token = await GetTokenMAG();
 
-        // Paso 4: Convertir todos los bancos y los MSI a mayúsculas antes de comparar
-        const response = resultadobancos.response.map((banco) => {
-            // Verificamos que el nombre del banco esté definido antes de intentar convertirlo
-            const bancoNombreUpper = banco.banco.nombre ? banco.banco.nombre.toUpperCase() : "";
+    // Paso 2: Obtener los bancos de la API
+    const resultadobancos = await GetBancosRel(token.token, idCIa);
+
+    // Paso 3: Obtener los MSI de la base de datos usando el SP
+    const msiData = await getMSIDataFromDB(idCIa);
+
+    // Paso 4: Convertir todos los bancos y los MSI a mayúsculas antes de comparar
+    const response = resultadobancos.response.map((banco) => {
+        // Verificamos que el nombre del banco esté definido antes de intentar convertirlo
+        const bancoNombreUpper = banco.banco.nombre ? banco.banco.nombre.toUpperCase() : "";
+        
+        // Verificamos si la aseguradora de este banco coincide con el idCIa
+        if (banco.aseguradora.id === parseInt(idCIa)) {
+            // Añadimos el campo MSI si se encuentra información de MSI
+            let msi = "SN MSI"; // Por defecto, si no hay MSI
             
-            // Verificamos si la aseguradora de este banco coincide con el idCIa
-            if (banco.aseguradora.id === parseInt(idCIa)) {
-                // Añadimos el campo MSI si se encuentra información de MSI
-                let msi = "SN MSI"; // Por defecto, si no hay MSI
-                
-                // Aseguramos que 'bancos_participantes' sea una cadena
-                const bancosParticipantes = msiData.bancos_participantes || "";
-                
-                // Convertir bancos participantes a mayúsculas y hacer la comparación
-                const bancosParticipantesUpper = bancosParticipantes.toUpperCase();
-                
-                // Limpiar y dividir la cadena de MSI y bancos
-                const matchingMSI = bancosParticipantesUpper.split(',').map(item => item.trim()).filter(msiValue => bancoNombreUpper.includes(msiValue));
-                
-                if (matchingMSI.length > 0) {
-                    // Si hay MSI, los unimos en un string
-                    msi = msiData.msiList.join(', ') || "SN MSI"; // Usamos la lista de MSI de la base de datos
-                }
-                
-                return {
-                    ...banco,
-                    MSI: msi // Añadimos el campo MSI con los valores obtenidos
-                };
+            // Aseguramos que 'bancos_participantes' sea una cadena
+            const bancosParticipantes = msiData.bancos_participantes || "";
+            
+            // Convertir bancos participantes a mayúsculas y hacer la comparación
+            const bancosParticipantesUpper = bancosParticipantes.toUpperCase();
+            
+            // Limpiar y dividir la cadena de MSI y bancos
+            const matchingMSI = bancosParticipantesUpper.split(',').map(item => item.trim()).filter(msiValue => bancoNombreUpper.includes(msiValue));
+            
+            if (matchingMSI.length > 0) {
+                // Si hay MSI, los unimos en un string
+                msi = msiData.msiList.join(', ') || "SN MSI"; // Usamos la lista de MSI de la base de datos
             }
-            return banco;
-        });
+            
+            return {
+                ...banco,
+                MSI: msi // Añadimos el campo MSI con los valores obtenidos
+            };
+        }
+        return banco;
+    });
 
-        // Paso 5: Devolver la respuesta combinada
-        res.json({
-            message: "Ok",
-            response
-        });
+    // Paso 5: Devolver la respuesta combinada
+    res.json({
+        message: "Ok",
+        response
+    });
 
-    } catch (error) {
-        console.error("Error al obtener la información:", error);
-        res.status(500).json({ message: "Hubo un error al procesar la solicitud", error: error.message });
-    }
+} catch (error) {
+    console.error("Error al obtener la información:", error);
+    res.status(500).json({ message: "Hubo un error al procesar la solicitud", error: error.message });
+}
 };
 
 // Función para obtener los MSI desde la base de datos
@@ -1581,4 +1607,23 @@ const getMSIDataFromDB = async (idCIa) => {
     }
 };
 
+export const GetInfoCotizacionID = (token, idCotMAG) => {
+    const myHeaders = new Headers();
+    myHeaders.append("Authorization", "Bearer " + token);
+    const requestOptions = {
+        method: "GET",
+        headers: myHeaders,
+        redirect: "follow"
+    };
 
+    return fetch(`https://apis.segurointeligente.mx/api/Cotizacion/CotizacionWs/${idCotMAG}`, requestOptions)
+        .then((response) => response.json())
+        .then((result) => {
+            // Puedes retornar el resultado si deseas usarlo en el .then() posterior
+            return result;
+        })
+        .catch((error) => {
+            console.error(error);
+            throw error;  // Lanza el error para manejarlo fuera de la función si es necesario
+        });
+};
