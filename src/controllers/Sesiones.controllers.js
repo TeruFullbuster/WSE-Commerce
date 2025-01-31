@@ -4,6 +4,7 @@ import fetch from 'node-fetch';
 import jwt from 'jsonwebtoken'
 import bcrypt from 'bcrypt'
 import moment from 'moment-timezone';
+import crypto from 'crypto';
 
 export const POSTSesion  = async (req, res) => {
     const {URL,FechaDCreacion,IP,primaTotal} = req.body
@@ -200,26 +201,27 @@ export const createProspecto = async (req, res) => {
             values.push(idGrupo);  // Añadir idGrupo al array de valores
         }
 
-        // Solo agregar idGrupo si está presente y no es vacía
-        if (IPSesion && IPSesion.trim() !== '') {
-            query += ', IPSesion'; // Añadir idGrupo al query
-            values.push(IPSesion);  // Añadir idGrupo al array de valores
-        }
-
         // Cerrar la parte de columnas y añadir los placeholders para los valores
         query += ') VALUES (' + values.map(() => '?').join(', ') + ')';
 
         // Ejecutar la consulta
         const [rows] = await pool.query(query, values);
 
+        // Generar un hash del ID recién insertado
+        const hashedID = generarHash(rows.insertId); // Hasheamos el ID recién insertado
+        // Insertamos el hash y el ID original en la nueva tabla
+        await pool.query('INSERT INTO HashToID (original_id, hashed_id) VALUES (?, ?)', [rows.insertId, hashedID]);
+        
         // Respuesta exitosa
         res.send({
             message: "Registro Exitoso",
-            id: rows.insertId,
+            id: hashedID, // ID real insertado en la base de datos
+            hashId: hashedID, // ID hasheado para la URL
+            idPasado: rows.insertId,
             marca,
             modelo,
             submarca,
-            aseguradoracampana: rows.aseguradoracampana || '' // Proveer un valor seguro
+            aseguradoracampana: rows.aseguradoracampana || ''
         });
     } catch (error) {
         // Manejo de errores
@@ -230,14 +232,20 @@ export const createProspecto = async (req, res) => {
     }
 };
 
+
 // Paso 1: Actualizar con Datos del Paso 1
 export const updateProspectoPaso1 = async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.params; // Este es el hash que recibimos
     const { aseguradora, precio_cotizacion, cevic, leadidcpy, descripcion, aseguradoracampana, leadsource } = req.body;
     const paso = 1;
+
     console.log(req.body);
 
     try {
+        // Usamos la función getOriginalIdFromHash para obtener el ID original
+        const originalId = await getOriginalIdFromHash(id);  // Usamos el hash para obtener el ID original
+
+        // Construir la consulta SQL dinámicamente
         let query = 'UPDATE SesionesFantasma SET aseguradora = ?, precio_cotizacion = ?, cevic = ?, paso = ?';
         const params = [aseguradora, precio_cotizacion, cevic, paso];
 
@@ -267,7 +275,7 @@ export const updateProspectoPaso1 = async (req, res) => {
 
         // WHERE clause
         query += ' WHERE id = ?';
-        params.push(id);
+        params.push(originalId); // Usamos el ID original aquí
 
         // Ejecutar la consulta
         const [result] = await pool.query(query, params);
@@ -279,20 +287,25 @@ export const updateProspectoPaso1 = async (req, res) => {
         res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
         return res.status(500).json({
-            message: 'Algo está mal'
+            message: 'Algo está mal',
+            error: error.message
         });
     }
 };
 
 // Paso 2: Actualizar con Datos del Paso 2
 export const updateProspectoEcommerce = async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.params; // Este es el hash que recibimos
     const { leadsource, aseguradora, aseguradoracampana, descripcion, cvic, idCotMAG } = req.body;
     const paso = 2;
     console.log(req.body);
+
     try {
+        // Usamos la función getOriginalIdFromHash para obtener el ID original
+        const originalId = await getOriginalIdFromHash(id);  // Usamos el hash para obtener el ID original
+
         let queryfirst = 'SELECT * FROM SesionesFantasma WHERE id = ?';
-        const [data] = await pool.query(queryfirst, [id]);
+        const [data] = await pool.query(queryfirst, [originalId]);  // Usamos el originalId en la consulta
         console.log(data[0]);
 
         let cotizacionId = idCotMAG; // Valor inicial de idCotMAG
@@ -340,7 +353,7 @@ export const updateProspectoEcommerce = async (req, res) => {
         });
 
         query += ' WHERE id = ?';
-        params.push(id);
+        params.push(originalId); // Usamos el ID original aquí
 
         const [result] = await pool.query(query, params);
 
@@ -356,7 +369,7 @@ export const updateProspectoEcommerce = async (req, res) => {
 
 export const updateProspectoPaso2 = async (req, res) => {
     console.log("Datos recibidos:", req.body);
-    const { id } = req.params;
+    const { id } = req.params; // Este es el hash que recibimos
     const {
         primer_nombre = null,
         segundo_nombre = null,
@@ -378,7 +391,10 @@ export const updateProspectoPaso2 = async (req, res) => {
     const paso = 3;
 
     try {
-        // Ejecutar el UPDATE
+        // Usamos la función getOriginalIdFromHash para obtener el original_id
+        const originalId = await getOriginalIdFromHash(id);  // Obtenemos el original_id a partir del hash
+
+        // Ejecutar el UPDATE con el original_id
         const [result] = await pool.query(
             `UPDATE SesionesFantasma 
              SET primer_nombre = ?, 
@@ -415,7 +431,7 @@ export const updateProspectoPaso2 = async (req, res) => {
                 numero_int_residencia, 
                 paso, 
                 leadsource,
-                id
+                originalId  // Usamos el original_id aquí
             ]
         );
 
@@ -445,32 +461,49 @@ export const updateProspectoPaso2 = async (req, res) => {
 
 // Paso 3: Actualizar con Datos del Paso 3
 export const updateProspectoPaso3 = async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.params; // Este es el hash que recibimos
     const { niv, no_motor, placa } = req.body;
     const paso = 4;
     console.log(req.body);
     console.log(id);    
+
     try {
-        const [result] = await pool.query('UPDATE SesionesFantasma SET niv = ?, num_motor = ?, placa = ?, paso = ? WHERE id = ?', [niv, no_motor, placa, paso, id]);
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+        // Usamos la función getOriginalIdFromHash para obtener el original_id
+        const originalId = await getOriginalIdFromHash(id);  // Obtenemos el original_id a partir del hash
+
+        // Ejecutamos la consulta UPDATE usando el original_id
+        const [result] = await pool.query(
+            'UPDATE SesionesFantasma SET niv = ?, num_motor = ?, placa = ?, paso = ? WHERE id = ?',
+            [niv, no_motor, placa, paso, originalId]  // Usamos el original_id aquí
+        );
+
+        // Verificamos si la actualización fue exitosa
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Prospecto no encontrado' });
+        }
 
         res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
+        console.error("Error en el UPDATE:", error);
         return res.status(500).json({
-            message: 'Algo está mal '
+            message: 'Algo está mal',
+            error: error.message
         });
     }
 };
 
 // Paso 4: Actualizar Lead ID CPY y los nuevos campos
 export const updateProspectoPaso4 = async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.params; // Este es el hash que recibimos
     const { leadidcpy, leadsource, Comentario, Banco, tTarjeta, ResponseMAGAPI } = req.body;
 
     // Verificar si leadidcpy está vacío o no está presente
     const leadidcpyValue = leadidcpy ? leadidcpy : null; // Si no viene, asigna null
 
     try {
+        // Usamos la función getOriginalIdFromHash para obtener el original_id
+        const originalId = await getOriginalIdFromHash(id);  // Obtener el original_id a partir del hash
+
         // Actualizamos los datos del prospecto, considerando que leadidcpy puede ser null
         const [result] = await pool.query(
             `UPDATE SesionesFantasma 
@@ -505,14 +538,18 @@ export const updateProspectoPaso4 = async (req, res) => {
                 ResponseMAGAPI.error, 
                 ResponseMAGAPI.isUrlCobro, 
                 ResponseMAGAPI.urlCobro,
-                id
+                originalId  // Usamos el original_id aquí
             ]
         );
 
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+        // Verificamos si la actualización fue exitosa
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Prospecto no encontrado' });
+        }
 
-        return res.json({ message: 'Prospecto actualizado exitosamente' });
+        res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
+        console.error("Error en el UPDATE:", error);
         return res.status(500).json({
             message: 'Algo está mal',
             error: error.message
@@ -522,11 +559,14 @@ export const updateProspectoPaso4 = async (req, res) => {
 
 // Paso 4: Actualizar Lead ID CPY y los nuevos campos
 export const updateProspectoRecotiza = async (req, res) => {
-    const { id } = req.params;
+    const { id } = req.params; // Este es el hash que recibimos
     const { cevic, edad, idCotMAG, precio_cotizacion, descripcion } = req.body;
 
     try {
-        // Actualizamos los datos del prospecto, considerando que leadidcpy puede ser null
+        // Usamos la función getOriginalIdFromHash para obtener el original_id
+        const originalId = await getOriginalIdFromHash(id);  // Obtener el original_id a partir del hash
+
+        // Actualizamos los datos del prospecto
         const [result] = await pool.query(
             `UPDATE SesionesFantasma 
             SET 
@@ -542,14 +582,18 @@ export const updateProspectoRecotiza = async (req, res) => {
                 idCotMAG,
                 precio_cotizacion,
                 descripcion,
-                id
+                originalId  // Usamos el original_id aquí
             ]
         );
 
-        if (result.affectedRows === 0) return res.status(404).json({ message: 'Prospecto no encontrado' });
+        // Validamos si la actualización fue exitosa
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: 'Prospecto no encontrado' });
+        }
 
-        return res.json({ message: 'Prospecto actualizado exitosamente' });
+        res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
+        console.error("Error en el UPDATE:", error);
         return res.status(500).json({
             message: 'Algo está mal',
             error: error.message
@@ -557,16 +601,24 @@ export const updateProspectoRecotiza = async (req, res) => {
     }
 };
 
+// Función para actualizar el LeadidCPY utilizando el hash
 export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
     try {
-        const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ? WHERE id = ?', [leadidcpy, id]);
-        if (result.affectedRows === 0) return { message: 'Prospecto no encontrado' };
+        // Obtener el original_id a partir del hash
+        const originalId = await getOriginalIdFromHash(id);  // Usamos el hash para obtener el ID original
+
+        // Ejecutar el UPDATE con el original_id
+        const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ? WHERE id = ?', [leadidcpy, originalId]);
+
+        if (result.affectedRows === 0) {
+            return { message: 'Prospecto no encontrado' };
+        }
 
         return { message: 'Prospecto actualizado exitosamente' };
     } catch (error) {
         return {
             message: 'Algo está mal',
-            error
+            error: error.message
         };
     }
 };
@@ -1627,4 +1679,20 @@ export const GetInfoCotizacionID = (token, idCotMAG) => {
             console.error(error);
             throw error;  // Lanza el error para manejarlo fuera de la función si es necesario
         });
+};
+
+// Función para generar el hash
+const generarHash = (input) => {
+    const hash = crypto.createHash('sha256'); // Usamos SHA-256
+    hash.update(input.toString()); // Añadimos el valor que deseamos hashear
+    return hash.digest('hex'); // Retorna el hash en formato hexadecimal
+};
+
+// Función para obtener el original_id a partir del hash
+const getOriginalIdFromHash = async (hash) => {
+    const [rows] = await pool.query('SELECT original_id FROM HashToID WHERE hashed_id = ?', [hash]);
+    if (rows.length === 0) {
+        throw new Error('Hash no válido o no encontrado');
+    }
+    return rows[0].original_id;  // Devolver el ID original
 };
