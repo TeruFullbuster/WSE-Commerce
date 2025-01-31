@@ -171,7 +171,7 @@ const ObtenerResource = (Origen) =>{
 
 export const createProspecto = async (req, res) => {
     const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, 
-        gclid, utm, leadsource, aseguradoraCampana, firstPage, isComparator, idGrupo, ipSesion } = req.body;
+        gclid, utm, leadsource, aseguradoraCampana, firstPage, isComparator, idGrupo, IPSesion } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
 
@@ -180,7 +180,7 @@ export const createProspecto = async (req, res) => {
     try {
         // Construir la consulta SQL dinámicamente
         let query = 'INSERT INTO SesionesFantasma (marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoracampana, firstPage' ;
-        let values = [marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana || '', firstPage, ipSesion];
+        let values = [marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana || '', firstPage];
 
         // Solo agregar descripcion si está presente y no es vacía
         if (descripcion && descripcion.trim() !== '') {
@@ -201,9 +201,9 @@ export const createProspecto = async (req, res) => {
         }
 
         // Solo agregar idGrupo si está presente y no es vacía
-        if (ipSesion && ipSesion.trim() !== '') {
-            query += ', ipSesion'; // Añadir idGrupo al query
-            values.push(ipSesion);  // Añadir idGrupo al array de valores
+        if (IPSesion && IPSesion.trim() !== '') {
+            query += ', IPSesion'; // Añadir idGrupo al query
+            values.push(IPSesion);  // Añadir idGrupo al array de valores
         }
 
         // Cerrar la parte de columnas y añadir los placeholders para los valores
