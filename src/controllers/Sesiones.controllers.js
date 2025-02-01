@@ -605,7 +605,7 @@ export const updateProspectoRecotiza = async (req, res) => {
 export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
     try {
         // Obtener el original_id a partir del hash
-        originalId = id;  // Usamos el hash para obtener el ID original
+        const originalId = id;  // Usamos el hash para obtener el ID original
 
         // Ejecutar el UPDATE con el original_id
         const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ? WHERE id = ?', [leadidcpy, originalId]);
