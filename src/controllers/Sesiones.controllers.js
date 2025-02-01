@@ -605,7 +605,7 @@ export const updateProspectoRecotiza = async (req, res) => {
 export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
     try {
         // Obtener el original_id a partir del hash
-        const originalId = await getOriginalIdFromHash(id);  // Usamos el hash para obtener el ID original
+        originalId = id;  // Usamos el hash para obtener el ID original
 
         // Ejecutar el UPDATE con el original_id
         const [result] = await pool.query('UPDATE SesionesFantasma SET LeadidCPY = ? WHERE id = ?', [leadidcpy, originalId]);
@@ -672,7 +672,7 @@ async function fetchProspectsEcommerce() {
 async function postProspect(prospect, token) {
     console.log(token);
     console.log(prospect);
-
+    console.log(prospect.id)
     // Crear los headers de la petición
     const myHeaders = {
         "Content-Type": "application/json",
@@ -813,7 +813,7 @@ export async function RecuperaProspectos(req, res) {
            
             // Agregar un delay de 10 segundos entre cada iteración
              // Guardar el ID del prospecto enviado exitosamente
-             enviados.push(prospect.id);  // Asegúrate de que `prospect.id` es el campo correcto
+             enviados.push("Texto" + prospect.id);  // Asegúrate de que `prospect.id` es el campo correcto
              console.log("Enviados " + enviados)
             await delay(5000);
         }
