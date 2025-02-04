@@ -201,6 +201,12 @@ export const createProspecto = async (req, res) => {
             values.push(idGrupo);  // Añadir idGrupo al array de valores
         }
 
+        // Solo agregar IPSesion si está presente y no es vacía
+        if (IPSesion && IPSesion.trim() !== '') {
+            query += ', ipSesion'; // Añadir IPSesion al query
+            values.push(IPSesion);  // Añadir IPSesion al array de valores
+        }
+
         // Cerrar la parte de columnas y añadir los placeholders para los valores
         query += ') VALUES (' + values.map(() => '?').join(', ') + ')';
 
