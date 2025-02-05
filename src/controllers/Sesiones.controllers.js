@@ -635,6 +635,31 @@ export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
     }
 };
 
+// Función para actualizar el UpdateDescCot utilizando el hash
+export const UpdateDescCot = async (req, res) => {
+    try {
+        // Obtener el original_id a partir del hash
+        const hash = res.params;  // Usamos el hash para obtener el ID original
+        const originalId = await getOriginalIdFromHash(hash);  // Obtener el original_id a partir del hash
+
+        const data = req.body;
+        const { descripcion, precio_cotizacion, idCotMAG } = data;
+        // Ejecutar el UPDATE con el original_id
+        const [result] = await pool.query('UPDATE SesionesFantasma SET descripcion = ?,precio_cotizacion = ?, idCotMAG = ? WHERE id = ?', [descripcion, precio_cotizacion, idCotMAG, originalId]);
+
+        if (result.affectedRows === 0) {
+            return { message: 'Prospecto no encontrado' };
+        }
+
+        return { message: 'Prospecto actualizado exitosamente' };
+    } catch (error) {
+        return {
+            message: 'Algo está mal',
+            error: error.message
+        };
+    }
+};
+
 async function obtenerToken() {
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
