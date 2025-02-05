@@ -639,24 +639,26 @@ export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
 export const UpdateDescCot = async (req, res) => {
     try {
         // Obtener el original_id a partir del hash
-        const hash = res.params;  // Usamos el hash para obtener el ID original
-        const originalId = await getOriginalIdFromHash(hash);  // Obtener el original_id a partir del hash
-
+        const id = req.params;  // Usamos el hash para obtener el ID original
+        console.log("Original ID:", id.id);
+        const originalId = await getOriginalIdFromHash(id.id);  // Obtener el original_id a partir del hash
+        console.log("Original ID:", originalId);
         const data = req.body;
-        const { descripcion, precio_cotizacion, idCotMAG } = data;
+        const { descripcion, precio_cotizacion, idCotMAG, idCIA, idProdCR } = data;
         // Ejecutar el UPDATE con el original_id
-        const [result] = await pool.query('UPDATE SesionesFantasma SET descripcion = ?,precio_cotizacion = ?, idCotMAG = ? WHERE id = ?', [descripcion, precio_cotizacion, idCotMAG, originalId]);
+        const [result] = await pool.query('UPDATE SesionesFantasma SET descripcion = ?, precio_cotizacion = ?, idCotMAG = ?, idCIA = ?, idProdCR = ? WHERE id = ?', [descripcion, precio_cotizacion, idCotMAG, idCIA, idProdCR, originalId]);
 
         if (result.affectedRows === 0) {
             return { message: 'Prospecto no encontrado' };
         }
 
-        return { message: 'Prospecto actualizado exitosamente' };
+        res.json({ message: 'Prospecto actualizado exitosamente' });
     } catch (error) {
-        return {
+        console.error("Error en el UPDATE:", error);
+        return res.status(500).json({
             message: 'Algo está mal',
             error: error.message
-        };
+        });
     }
 };
 
