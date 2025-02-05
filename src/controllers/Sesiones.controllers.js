@@ -172,7 +172,7 @@ const ObtenerResource = (Origen) =>{
 
 export const createProspecto = async (req, res) => {
     const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, 
-        gclid, utm, leadsource, aseguradoraCampana, firstPage, isComparator, idGrupo, IPSesion } = req.body;
+        gclid, utm, leadsource, aseguradoraCampana, firstPage, isComparator, idGrupo, IPSesion, cvic } = req.body;
     const fecha_creacion = new Date();
     const paso = 0;
 
@@ -187,6 +187,12 @@ export const createProspecto = async (req, res) => {
         if (descripcion && descripcion.trim() !== '') {
             query += ', descripcion'; // Añadir descripcion al query
             values.push(descripcion);  // Añadir descripcion al array de valores
+        }
+
+        // Solo agregar cvic si está presente y no es vacía
+        if (cvic && cvic.trim() !== '') {
+            query += ', cevic'; // Añadir descripcion al query
+            values.push(cvic);  // Añadir descripcion al array de valores
         }
 
         // Solo agregar isComparator si está presente y no es vacía
@@ -1705,3 +1711,5 @@ const getOriginalIdFromHash = async (hash) => {
     }
     return rows[0].original_id;  // Devolver el ID original
 };
+
+
