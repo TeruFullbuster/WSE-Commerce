@@ -644,9 +644,9 @@ export const UpdateDescCot = async (req, res) => {
         const originalId = await getOriginalIdFromHash(id.id);  // Obtener el original_id a partir del hash
         console.log("Original ID:", originalId);
         const data = req.body;
-        const { descripcion, precio_cotizacion, idCotMAG, idCIA, idProdCR } = data;
+        const { descripcion, precio_cotizacion, idCotMAG, idCIA, idProdCR, aseguradora } = data;
         // Ejecutar el UPDATE con el original_id
-        const [result] = await pool.query('UPDATE SesionesFantasma SET descripcion = ?, precio_cotizacion = ?, idCotMAG = ?, idCIA = ?, idProdCR = ? WHERE id = ?', [descripcion, precio_cotizacion, idCotMAG, idCIA, idProdCR, originalId]);
+        const [result] = await pool.query('UPDATE SesionesFantasma SET descripcion = ?, precio_cotizacion = ?, idCotMAG = ?, idCIA = ?, idProdCR = ?, aseguradora = ? WHERE id = ?', [descripcion, precio_cotizacion, idCotMAG, idCIA, idProdCR, aseguradora, originalId]);
 
         if (result.affectedRows === 0) {
             return { message: 'Prospecto no encontrado' };
