@@ -259,6 +259,41 @@ export const GetCatalogos = async (req, res) => {
     }
 };
 
+export const GetMetodosPago = async (req, res) => {
+    try {
+        // Obtener token del encabezado
+        const authHeader = req.headers['authorization'];
+        if (!authHeader) {
+            return res.status(401).json({ message: "Acceso no autorizado, token requerido" });
+        }
+
+        // Verificar si el token es válido
+        const token = authHeader.split(" ")[1];
+        let decoded;
+        try {
+            decoded = jwt.verify(token, SECRET_KEY);
+        } catch (err) {
+            return res.status(403).json({ message: "Token inválido o expirado" });
+        }
+
+        // Obtener `usuario_id` del token
+        const usuario_id = decoded.usuario_id;
+
+        // Consultar los métodos de pago del usuario
+        const [metodos] = await pool.query(`
+            SELECT id, nombre, tipo, saldo_disponible, limite_credito 
+            FROM cgg_MetodosPagoUsuario
+            WHERE usuario_id = ?
+        `, [usuario_id]);
+
+        res.status(200).json({ metodos });
+
+    } catch (error) {
+        console.error("Error al obtener los métodos de pago:", error);
+        res.status(500).json({ message: "Error en el servidor al obtener los métodos de pago" });
+    }
+};
+
 export const GetGastosByFecha = async (req, res) => {
     try {
         // Obtener token del encabezado
