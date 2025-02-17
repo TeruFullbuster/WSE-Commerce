@@ -97,7 +97,7 @@ export const GetGastos = async (req, res) => {
             return res.status(401).json({ message: "Acceso no autorizado, token requerido" });
         }
 
-        // Verificar token
+        // Verificar si el token es válido
         const token = authHeader.split(" ")[1];
         let decoded;
         try {
@@ -106,23 +106,37 @@ export const GetGastos = async (req, res) => {
             return res.status(403).json({ message: "Token inválido o expirado" });
         }
 
-        // Obtener usuario_id
+        // Obtener `usuario_id` del token
         const usuario_id = decoded.usuario_id;
 
-        // Obtener los gastos activos del usuario
+        // Obtener el nombre del usuario
+        const [userRows] = await pool.query(
+            'SELECT nombre FROM cgg_Usuarios WHERE id = ?',
+            [usuario_id]
+        );
+
+        if (userRows.length === 0) {
+            return res.status(404).json({ message: "Usuario no encontrado" });
+        }
+
+        const nombreUsuario = userRows[0].nombre;
+
+        // Obtener los gastos del usuario con la subcategoría incluida
         const [gastosRows] = await pool.query(`
             SELECT r.id, r.fecha, c.categoria, c.subcategoria, r.monto, r.estatus 
             FROM cgg_Registros r
             INNER JOIN cgg_Catalogos c ON r.catalogo_id = c.id
-            WHERE r.usuario_id = ? AND r.activo = TRUE
-        `, [usuario_id]);
+            WHERE r.usuario_id = ?`,
+            [usuario_id]
+        );
 
-        // Calcular total de gastos
-        const totalGastos = gastosRows.reduce((sum, gasto) => sum + gasto.monto, 0);
+        // Calcular el total de gastos
+        const totalGastos = gastosRows.reduce((sum, gasto) => sum + parseFloat(gasto.monto), 0);
 
         res.status(200).json({
             usuario_id,
-            total_gastos: totalGastos,
+            nombre: nombreUsuario,
+            total_gastos: totalGastos.toFixed(2),
             gastos: gastosRows
         });
 
@@ -149,21 +163,34 @@ export const AddGasto = async (req, res) => {
             return res.status(403).json({ message: "Token inválido o expirado" });
         }
 
-        // Obtener `usuario_id` del token decodificado
+        // Obtener `usuario_id` del token
         const usuario_id = decoded.usuario_id;
 
-        const { catalogo_id, monto, fecha, metodo_pago_usuario_id, estatus, total_parcialidades = 1, parcialidad_actual = 1 } = req.body;
+        // Extraer datos del gasto
+        const { fecha, categoria, subcategoria, monto, estatus, metodo_pago_usuario_id } = req.body;
 
-        // Validaciones básicas
-        if (!catalogo_id || !monto || !fecha || !metodo_pago_usuario_id || !estatus) {
+        // Validación
+        if (!fecha || !categoria || !subcategoria || !monto || !estatus) {
             return res.status(400).json({ message: "Todos los campos son obligatorios" });
         }
 
-        // Insertar el gasto en la base de datos
+        // Buscar el ID de la categoría y subcategoría en `cgg_Catalogos`
+        const [catalogo] = await pool.query(
+            "SELECT id FROM cgg_Catalogos WHERE categoria = ? AND subcategoria = ?",
+            [categoria, subcategoria]
+        );
+
+        if (catalogo.length === 0) {
+            return res.status(400).json({ message: "La categoría o subcategoría no existen en el catálogo" });
+        }
+
+        const catalogo_id = catalogo[0].id;
+
+        // Insertar el gasto en la base de datos con `catalogo_id`
         await pool.query(
-            `INSERT INTO cgg_Registros (usuario_id, catalogo_id, fecha, monto, metodo_pago_usuario_id, estatus, total_parcialidades, parcialidad_actual) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
-            [usuario_id, catalogo_id, fecha, monto, metodo_pago_usuario_id, estatus, total_parcialidades, parcialidad_actual]
+            `INSERT INTO cgg_Registros (usuario_id, fecha, catalogo_id, monto, estatus, metodo_pago_usuario_id)
+             VALUES (?, ?, ?, ?, ?, ?)`,
+            [usuario_id, fecha, catalogo_id, monto, estatus, metodo_pago_usuario_id || null]
         );
 
         res.status(201).json({ message: "Gasto registrado correctamente" });
@@ -176,21 +203,34 @@ export const AddGasto = async (req, res) => {
 
 export const AddMetodoPago = async (req, res) => {
     try {
-        const { usuario_id, nombre, tipo, saldo_disponible = 0, limite_credito = null } = req.body;
-
-        // Validaciones
-        if (!usuario_id || !nombre || !tipo) {
-            return res.status(400).json({ message: "Todos los campos obligatorios excepto saldo y límite de crédito" });
+        // Obtener token del encabezado
+        const authHeader = req.headers['authorization'];
+        if (!authHeader) {
+            return res.status(401).json({ message: "Acceso no autorizado, token requerido" });
         }
 
-        // Verificar si el usuario existe
-        const [user] = await pool.query('SELECT id FROM cgg_Usuarios WHERE id = ?', [usuario_id]);
-        if (user.length === 0) {
-            return res.status(404).json({ message: "Usuario no encontrado" });
+        // Verificar si el token es válido
+        const token = authHeader.split(" ")[1];
+        let decoded;
+        try {
+            decoded = jwt.verify(token, SECRET_KEY);
+        } catch (err) {
+            return res.status(403).json({ message: "Token inválido o expirado" });
+        }
+
+        // Extraer `usuario_id` del token
+        const usuario_id = decoded.usuario_id;
+
+        // Extraer datos del método de pago desde el cuerpo de la petición
+        const { nombre, tipo, saldo_disponible = 0, limite_credito = null } = req.body;
+
+        // Validaciones
+        if (!nombre || !tipo) {
+            return res.status(400).json({ message: "Nombre y tipo son obligatorios" });
         }
 
         // Insertar nuevo método de pago
-        const response = await pool.query(
+        const [response] = await pool.query(
             'INSERT INTO cgg_MetodosPagoUsuario (usuario_id, nombre, tipo, saldo_disponible, limite_credito) VALUES (?, ?, ?, ?, ?)',
             [usuario_id, nombre, tipo, saldo_disponible, limite_credito]
         );
