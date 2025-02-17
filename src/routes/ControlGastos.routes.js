@@ -9,7 +9,8 @@ import {
     GetGastosByFecha, 
     UpdateGasto, 
     DeleteGasto, 
-    RestoreGasto 
+    RestoreGasto,
+    GetMetodosPago
 } from '../controllers/ControlGastos.controllers.js';
 
 const router = Router();
@@ -31,5 +32,6 @@ router.put('/CGG/RestoreGasto/:id', RestoreGasto); // Restaurar un gasto elimina
 
 // Catálogos
 router.get('/CGG/GetCatalogos', GetCatalogos);
-
+// Rutas de métodos de pago
+router.get('/CGG/GetMetodosPago', GetMetodosPago);
 export default router;
