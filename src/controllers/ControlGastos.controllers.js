@@ -121,12 +121,12 @@ export const GetGastos = async (req, res) => {
 
         const nombreUsuario = userRows[0].nombre;
 
-        // Obtener los gastos del usuario con la subcategoría incluida
+        // Obtener los gastos del usuario **que estén activos**
         const [gastosRows] = await pool.query(`
             SELECT r.id, r.fecha, c.categoria, c.subcategoria, r.monto, r.estatus 
             FROM cgg_Registros r
             INNER JOIN cgg_Catalogos c ON r.catalogo_id = c.id
-            WHERE r.usuario_id = ?`,
+            WHERE r.usuario_id = ? AND r.activo = 1`, // Solo registros activos
             [usuario_id]
         );
 
@@ -169,12 +169,12 @@ export const AddGasto = async (req, res) => {
         // Extraer datos del gasto
         const { fecha, categoria, subcategoria, monto, estatus, metodo_pago_usuario_id } = req.body;
 
-        // Validación
+        // Validar que **todos** los campos obligatorios estén presentes
         if (!fecha || !categoria || !subcategoria || !monto || !estatus) {
-            return res.status(400).json({ message: "Todos los campos son obligatorios" });
+            return res.status(400).json({ message: "Todos los campos son obligatorios (Fecha, Categoría, Subcategoría, Monto, Estatus)" });
         }
 
-        // Buscar el ID de la categoría y subcategoría en `cgg_Catalogos`
+        // Buscar el ID del **catálogo** con la categoría y subcategoría proporcionadas
         const [catalogo] = await pool.query(
             "SELECT id FROM cgg_Catalogos WHERE categoria = ? AND subcategoria = ?",
             [categoria, subcategoria]
@@ -188,9 +188,9 @@ export const AddGasto = async (req, res) => {
 
         // Insertar el gasto en la base de datos con `catalogo_id`
         await pool.query(
-            `INSERT INTO cgg_Registros (usuario_id, fecha, catalogo_id, monto, estatus, metodo_pago_usuario_id)
-             VALUES (?, ?, ?, ?, ?, ?)`,
-            [usuario_id, fecha, catalogo_id, monto, estatus, metodo_pago_usuario_id || null]
+            `INSERT INTO cgg_Registros (usuario_id, fecha, catalogo_id, subcatalogo_id, monto, estatus, metodo_pago_usuario_id, activo)
+             VALUES (?, ?, ?, ?, ?, ?, ?, 1)`,
+            [usuario_id, fecha, catalogo_id, catalogo_id, monto, estatus, metodo_pago_usuario_id || null] // `subcatalogo_id` es el mismo `catalogo_id`
         );
 
         res.status(201).json({ message: "Gasto registrado correctamente" });
