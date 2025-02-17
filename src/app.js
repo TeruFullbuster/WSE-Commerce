@@ -12,6 +12,8 @@ import Cotizadores from './routes/Cotizadores.routes.js';
 import cors from 'cors';
 import chicle from 'crypto';
 import Facebook from './routes/facebook.routes.js';
+import GastosGenerales from './routes/ControlGastos.routes.js';
+
 const app = express();
 const PORT = 3001;
 
@@ -43,6 +45,8 @@ app.use(Facebook)
 app.use(Documentos)
 app.use(Servicios);
 app.use(Cotizadores);
+app.use(GastosGenerales);
+
 // Configuración del servidor para escuchar en el puerto
 app.listen(PORT, () => {
   console.log(`Servidor escuchando en http://localhost:${PORT}`);
