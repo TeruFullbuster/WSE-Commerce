@@ -121,28 +121,42 @@ export const GetGastos = async (req, res) => {
 
         const nombreUsuario = userRows[0].nombre;
 
-        // Obtener los gastos del usuario **que estén activos**
-        const [gastosRows] = await pool.query(`
-            SELECT r.id, r.fecha, c.categoria, c.subcategoria, r.monto, r.estatus 
+        // Obtener los gastos e ingresos del usuario
+        const [registros] = await pool.query(`
+            SELECT r.id, r.fecha, c.categoria, c.subcategoria, c.tipo, r.monto, r.estatus 
             FROM cgg_Registros r
             INNER JOIN cgg_Catalogos c ON r.catalogo_id = c.id
-            WHERE r.usuario_id = ? AND r.activo = 1`, // Solo registros activos
+            WHERE r.usuario_id = ? AND r.activo = 1`,  // Solo registros activos
             [usuario_id]
         );
 
-        // Calcular el total de gastos
-        const totalGastos = gastosRows.reduce((sum, gasto) => sum + parseFloat(gasto.monto), 0);
+        // Separar ingresos y gastos
+        let totalIngresos = 0;
+        let totalGastos = 0;
+        
+        registros.forEach(reg => {
+            if (reg.tipo === "In") {
+                totalIngresos += parseFloat(reg.monto);
+            } else if (reg.tipo === "Out") {
+                totalGastos += parseFloat(reg.monto);
+                reg.monto = -Math.abs(reg.monto); // Mostrar en negativo
+            }
+        });
+
+        const saldoTotal = totalIngresos - totalGastos;
 
         res.status(200).json({
             usuario_id,
             nombre: nombreUsuario,
+            total_ingresos: totalIngresos.toFixed(2),
             total_gastos: totalGastos.toFixed(2),
-            gastos: gastosRows
+            saldo_total: saldoTotal.toFixed(2),
+            registros
         });
 
     } catch (error) {
-        console.error("Error al obtener los gastos:", error);
-        res.status(500).json({ message: "Error en el servidor al obtener los gastos" });
+        console.error("Error al obtener los registros:", error);
+        res.status(500).json({ message: "Error en el servidor al obtener los registros" });
     }
 };
 
