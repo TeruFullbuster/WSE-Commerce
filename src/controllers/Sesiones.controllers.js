@@ -474,7 +474,7 @@ export const updateProspectoPaso2 = async (req, res) => {
 // Paso 3: Actualizar con Datos del Paso 3
 export const updateProspectoPaso3 = async (req, res) => {
     const { id } = req.params; // Este es el hash que recibimos
-    const { niv, no_motor, placa } = req.body;
+    const { leadsource, niv, no_motor, placa } = req.body;
     const paso = 4;
     console.log(req.body);
     console.log(id);    
@@ -485,8 +485,8 @@ export const updateProspectoPaso3 = async (req, res) => {
 
         // Ejecutamos la consulta UPDATE usando el original_id
         const [result] = await pool.query(
-            'UPDATE SesionesFantasma SET niv = ?, num_motor = ?, placa = ?, paso = ? WHERE id = ?',
-            [niv, no_motor, placa, paso, originalId]  // Usamos el original_id aquí
+            'UPDATE SesionesFantasma SET niv = ?, num_motor = ?, placa = ?, paso = ?, leadsource = ? WHERE id = ?',
+            [niv, no_motor, placa, paso, leadsource, originalId]  // Usamos el original_id aquí
         );
 
         // Verificamos si la actualización fue exitosa
