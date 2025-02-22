@@ -1,6 +1,6 @@
 import { Router } from "express";
 
-import { CotizarQualitas,BotcotizacionQualitas, BotEmisionQualitas, BotcotizacionChubb, EspejoQualitas } from '../controllers/Cotizadores.controllers.js'
+import { CotizarQualitas,BotcotizacionQualitas, BotEmisionQualitas, BotcotizacionChubb, EspejoQualitas,BotcotizacionChubbExperto } from '../controllers/Cotizadores.controllers.js'
 
 const router = Router()
 
@@ -13,6 +13,8 @@ router.post('/Emitir/QualitasBot' , BotEmisionQualitas)
 router.post('/Cotizar/ChubbBot' , BotcotizacionChubb)
 
 router.post('/Emitir/ChubbBot' , BotcotizacionChubb)
+
+router.post('/Cotizar/ChubbExperto' , BotcotizacionChubbExperto)
 
 router.post('/Espejo/Cotizar/QualitasBot' , EspejoQualitas)
 

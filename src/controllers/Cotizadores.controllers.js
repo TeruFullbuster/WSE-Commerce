@@ -4,6 +4,7 @@ import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
 import puppeteer from 'puppeteer';
 import xmlbuilder from 'xmlbuilder';
+import { chromium } from 'playwright';
 
 export const CotizarQualitas = async (req, res) => {
     const {
@@ -1741,3 +1742,112 @@ export const EspejoQualitas = async (req, res) => {
         });
     }
 };
+
+export const BotcotizacionChubbExperto = async (req, res) => {
+    try {
+        const browser = await chromium.launch({
+            headless: true, 
+            args: ['--no-sandbox', '--disable-setuid-sandbox']
+        });
+
+        const page = await browser.newPage();
+        await page.goto('https://chubbcrossborder.com/chubb/agencyPage.php?ac=ADMEXPERTOINS&pr=SB', { waitUntil: 'domcontentloaded' });
+        console.log('✅ Página cargada correctamente.');
+
+        await page.waitForSelector('iframe#frameContenido', { timeout: 15000 });
+        const frameHandle = await page.$('iframe#frameContenido');
+        const frame = await frameHandle.contentFrame();
+        if (!frame) throw new Error("❌ No se pudo acceder al iframe.");
+        console.log("✅ Se accedió al iframe correctamente.");
+
+        await frame.selectOption('select#days', '90');
+        console.log('✅ Se seleccionó "90 días".');
+
+        await frame.waitForSelector('select#territory', { timeout: 10000 });
+        await frame.selectOption('select#territory', '2');
+        console.log('✅ Se seleccionó "Baja California, Baja California Sur & Sonora".');
+        await frame.waitForTimeout(1000);
+        await frame.selectOption('select#territory', '1');
+        console.log('✅ Se seleccionó "All Mexico".');
+        await frame.waitForTimeout(3000);
+
+        await frame.selectOption('select#vehicleTypeId', '2');
+        console.log('✅ Se seleccionó "Tipo de vehículo 2".');
+
+        await frame.selectOption('select#vehicleValue', '5000');
+        console.log('✅ Se seleccionó "Valor del vehículo: 5000".');
+
+        // ✅ Selección del botón "Next" asegurando que no sea "Close"
+        const buttons = await frame.$$('a.btn');
+        let nextButton = null;
+
+        for (const btn of buttons) {
+            const text = await frame.evaluate(el => el.innerText, btn);
+            if (text.trim() === 'Next') {
+                nextButton = btn;
+                break;
+            }
+        }
+
+        if (nextButton) {
+            await nextButton.click();
+            console.log("✅ Se hizo clic en el botón 'Next'.");
+        } else {
+            throw new Error("❌ No se encontró el botón 'Next'.");
+        }
+
+        await frame.waitForSelector('#cotizando', { timeout: 10000 });
+        console.log("✅ Tabla de cotización detectada.");
+
+        // ✅ Obtención del número de cotización desde el `span#numCotiza`
+        await frame.waitForSelector('span#numCotiza', { timeout: 5000 });
+        const quotationText = await frame.$eval('span#numCotiza', el => el.innerText);
+        const quotationNumberMatch = quotationText.match(/(\d+)/);
+        const quotationNumber = quotationNumberMatch ? quotationNumberMatch[1] : 'No encontrado';
+        console.log("✅ Número de cotización:", quotationNumber);
+
+        // ✅ Formatear la tabla correctamente
+        const tableData = await frame.evaluate(() => {
+            const table = document.querySelector('#cotizando table');
+            if (!table) return null;
+
+            const rows = table.querySelectorAll('tr');
+            const headers = Array.from(rows[0].querySelectorAll('th')).map(th => th.innerText.trim());
+
+            let data = [];
+            rows.forEach((row, index) => {
+                if (index === 0) return;
+                const cells = Array.from(row.querySelectorAll('td'));
+                if (cells.length > 0) {
+                    let rowData = {};
+                    rowData['Policy Period'] = cells[0].innerText.trim();
+                    headers.slice(1).forEach((header, i) => {
+                        rowData[header] = cells[i + 1]?.innerText.trim() || '';
+                    });
+                    data.push(rowData);
+                }
+            });
+
+            return data;
+        });
+
+        await browser.close();
+        res.json({ 
+            message: 'Scraping completado', 
+            quotationNumber: quotationNumber, 
+            table: tableData 
+        });
+
+    } catch (error) {
+        console.error('❌ Error en el scraping:', error);
+        res.status(500).json({ message: 'Error en scraping', error: error.message });
+    }
+};
+
+
+
+
+
+
+
+
