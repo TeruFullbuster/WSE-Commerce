@@ -475,7 +475,7 @@ export const updateProspectoPaso2 = async (req, res) => {
 export const updateProspectoPaso3 = async (req, res) => {
     const { id } = req.params; // Este es el hash que recibimos
     const { leadsource, niv, no_motor, placa } = req.body;
-    const paso = 4;
+    const paso = 3;
     console.log(req.body);
     console.log(id);    
 
@@ -508,7 +508,7 @@ export const updateProspectoPaso3 = async (req, res) => {
 export const updateProspectoPaso4 = async (req, res) => {
     const { id } = req.params; // Este es el hash que recibimos
     const { leadidcpy, leadsource, Comentario, Banco, tTarjeta, ResponseMAGAPI } = req.body;
-
+    const Paso = 4;
     // Verificar si leadidcpy está vacío o no está presente
     const leadidcpyValue = leadidcpy ? leadidcpy : null; // Si no viene, asigna null
 
@@ -533,7 +533,8 @@ export const updateProspectoPaso4 = async (req, res) => {
                 isError = ?, 
                 error = ?, 
                 isURLCOBRO  = ?, 
-                URLCobro = ? 
+                URLCobro = ?,
+                paso = ?
             WHERE id = ?`, 
             [
                 leadidcpyValue,  // Usamos leadidcpyValue, que será null si no se pasa
@@ -550,6 +551,7 @@ export const updateProspectoPaso4 = async (req, res) => {
                 ResponseMAGAPI.error, 
                 ResponseMAGAPI.isUrlCobro, 
                 ResponseMAGAPI.urlCobro,
+                Paso,
                 originalId  // Usamos el original_id aquí
             ]
         );

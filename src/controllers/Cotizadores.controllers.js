@@ -1743,10 +1743,73 @@ export const EspejoQualitas = async (req, res) => {
     }
 };
 
+export const EspejoChubb = async (req, res) => {
+    try {
+        // Extraer datos del body
+        const {  
+            noSerieNIV,
+            valorVehiculoUSD,
+            diasCobertura,
+            zonaCobertura,
+            hibridoElectrico,
+            tieneRemolque,
+            tipoDeducible,
+            edadConductor,
+            nombreContacto,
+            apellidoContacto,
+            emailContacto,
+            celularContacto
+        } = req.body;
+
+        // URL del endpoint externo
+        const url = "http://34.46.77.143:3001/Cotizar/QualitasBot";
+
+        // Datos para el POST
+        const data = {
+            noSerieNIV: noSerieNIV,
+            valorVehiculoUSD: valorVehiculoUSD, // Aquí toma el valor correcto del body
+            diasCobertura: diasCobertura,
+            zonaCobertura: zonaCobertura,
+            hibridoElectrico: hibridoElectrico,
+            tieneRemolque: tieneRemolque,
+            tipoDeducible: tipoDeducible,
+            edadConductor: edadConductor,
+            nombreContacto: nombreContacto,
+            apellidoContacto: apellidoContacto,
+            emailContacto: emailContacto,
+            celularContacto: celularContacto
+        };
+
+        // Hacer la solicitud al endpoint externo
+        const response = await axios.post(url, data, {
+            headers: { "Content-Type": "application/json" }
+        });
+
+        // Enviar la respuesta del servidor externo al cliente
+        res.status(200).json({
+            success: true,
+            message: "Datos enviados y procesados correctamente.",
+            data: response.data // Respuesta del endpoint externo
+        });
+
+    } catch (error) {
+        console.error("Error al consumir el endpoint:", error.message);
+
+        // Manejar errores y enviar respuesta al cliente
+        res.status(500).json({
+            success: false,
+            message: "Error al consumir el endpoint externo.",
+            error: error.message
+        });
+    }
+};
+
 export const BotcotizacionChubbExperto = async (req, res) => {
+    const  { days, vehicleTypeId, vehicleValue, hybrid, under21 }  = req.body;
+
     try {
         const browser = await chromium.launch({
-            headless: true, 
+            headless: false, 
             args: ['--no-sandbox', '--disable-setuid-sandbox']
         });
 
@@ -1759,8 +1822,8 @@ export const BotcotizacionChubbExperto = async (req, res) => {
         const frame = await frameHandle.contentFrame();
         if (!frame) throw new Error("❌ No se pudo acceder al iframe.");
         console.log("✅ Se accedió al iframe correctamente.");
-
-        await frame.selectOption('select#days', '90');
+        console.log(days)
+        await frame.selectOption('select#days', days);
         console.log('✅ Se seleccionó "90 días".');
 
         await frame.waitForSelector('select#territory', { timeout: 10000 });
@@ -1771,10 +1834,10 @@ export const BotcotizacionChubbExperto = async (req, res) => {
         console.log('✅ Se seleccionó "All Mexico".');
         await frame.waitForTimeout(3000);
 
-        await frame.selectOption('select#vehicleTypeId', '2');
+        await frame.selectOption('select#vehicleTypeId', vehicleTypeId);
         console.log('✅ Se seleccionó "Tipo de vehículo 2".');
 
-        await frame.selectOption('select#vehicleValue', '5000');
+        await frame.selectOption('select#vehicleValue', vehicleValue);
         console.log('✅ Se seleccionó "Valor del vehículo: 5000".');
 
         // ✅ Selección del botón "Next" asegurando que no sea "Close"
