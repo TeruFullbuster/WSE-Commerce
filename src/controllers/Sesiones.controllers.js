@@ -508,15 +508,27 @@ export const updateProspectoPaso3 = async (req, res) => {
 export const updateProspectoPaso4 = async (req, res) => {
     const { id } = req.params; // Este es el hash que recibimos
     const { leadidcpy, leadsource, Comentario, Banco, tTarjeta, ResponseMAGAPI } = req.body;
-    const Paso = 4;
-    // Verificar si leadidcpy está vacío o no está presente
-    const leadidcpyValue = leadidcpy ? leadidcpy : null; // Si no viene, asigna null
-
+    
     try {
-        // Usamos la función getOriginalIdFromHash para obtener el original_id
-        const originalId = await getOriginalIdFromHash(id);  // Obtener el original_id a partir del hash
+        // Obtener el original_id a partir del hash
+        const originalId = await getOriginalIdFromHash(id);
+        if (!originalId) {
+            return res.status(404).json({ message: "ID no encontrado en la base de datos" });
+        }
 
-        // Actualizamos los datos del prospecto, considerando que leadidcpy puede ser null
+        // Verificar si leadidcpy está vacío o no está presente
+        const leadidcpyValue = leadidcpy || null;
+
+        // Evaluamos el paso basado en las condiciones proporcionadas
+        let Paso = 4; // Valor por defecto
+
+        if (ResponseMAGAPI?.isPoliza === 1 && ResponseMAGAPI?.isCobro === 0 && ResponseMAGAPI?.isError === 1) {
+            Paso = 5; // Caso donde hay póliza, no se cobró y hubo error
+        } else if (ResponseMAGAPI?.isPoliza === 1 && ResponseMAGAPI?.isCobro === 1 && ResponseMAGAPI?.isError === 0) {
+            Paso = 6; // Caso donde hay póliza, se cobró y no hubo error
+        }
+
+        // Ejecutamos la actualización con el paso correspondiente
         const [result] = await pool.query(
             `UPDATE SesionesFantasma 
             SET 
@@ -537,39 +549,40 @@ export const updateProspectoPaso4 = async (req, res) => {
                 paso = ?
             WHERE id = ?`, 
             [
-                leadidcpyValue,  // Usamos leadidcpyValue, que será null si no se pasa
+                leadidcpyValue,  // Si es null, la base de datos lo manejará
                 leadsource,
                 Comentario,
                 Banco,
                 tTarjeta,
-                ResponseMAGAPI.iddocto, 
-                ResponseMAGAPI.documento, 
-                ResponseMAGAPI.url, 
-                ResponseMAGAPI.isPoliza, 
-                ResponseMAGAPI.isCobro, 
-                ResponseMAGAPI.isError, 
-                ResponseMAGAPI.error, 
-                ResponseMAGAPI.isUrlCobro, 
-                ResponseMAGAPI.urlCobro,
+                ResponseMAGAPI?.iddocto || null, 
+                ResponseMAGAPI?.documento || null, 
+                ResponseMAGAPI?.url || null, 
+                ResponseMAGAPI?.isPoliza || 0, 
+                ResponseMAGAPI?.isCobro || 0, 
+                ResponseMAGAPI?.isError || 0, 
+                ResponseMAGAPI?.error || null, 
+                ResponseMAGAPI?.isUrlCobro || 0, 
+                ResponseMAGAPI?.urlCobro || null,
                 Paso,
-                originalId  // Usamos el original_id aquí
+                originalId
             ]
         );
 
         // Verificamos si la actualización fue exitosa
         if (result.affectedRows === 0) {
-            return res.status(404).json({ message: 'Prospecto no encontrado' });
+            return res.status(404).json({ message: "Prospecto no encontrado o sin cambios" });
         }
 
-        res.json({ message: 'Prospecto actualizado exitosamente' });
+        res.json({ message: "Prospecto actualizado exitosamente", paso: Paso });
     } catch (error) {
-        console.error("Error en el UPDATE:", error);
+        console.error("❌ Error en el UPDATE:", error);
         return res.status(500).json({
-            message: 'Algo está mal',
+            message: "Error interno en la actualización",
             error: error.message
         });
     }
 };
+
 
 // Paso 4: Actualizar Lead ID CPY y los nuevos campos
 export const updateProspectoRecotiza = async (req, res) => {
@@ -1735,13 +1748,16 @@ const getOriginalIdFromHash = async (hash) => {
 
 async function sendCRM(token, prospect) {
     console.log(prospect)
+    let EstatusContactacion = "-None-";
+    let Estatus_Lead_Prospecto = "Sin Tocar";
+    let Owner = "";
     // Procesar el campo gclid para manejar múltiples valores separados por coma
     if (prospect.gclid && prospect.gclid.includes(",")) {
         prospect.gclid = prospect.gclid.split(",")[0].trim();
     }
 
     // Reconstruir valores si el paso es 3 o 4
-    if (prospect.paso === 3 || prospect.paso === 4) {
+    if (prospect.paso >= 3) {
         // Reconstruir fecha de nacimiento
         if (prospect.dia_nac && prospect.mes_nac && prospect.anio_nac) {
             prospect.edad = `${prospect.anio_nac}-${prospect.mes_nac}-${prospect.dia_nac}`;
@@ -1761,6 +1777,21 @@ async function sendCRM(token, prospect) {
         // Si el paso es 4, agregar placas, NIV y número de motor
         if (prospect.paso === 4) {
             prospect.descripcion += ` Placas: ${prospect.placas || "N/A"} NIV: ${prospect.niv || "N/A"} Número de Motor: ${prospect.num_motor || "N/A"}`;
+        }
+        // Si el paso es 4, agregar placas, NIV y número de motor
+        if (prospect.paso === 5) {
+            EstatusContactacion = 'Fallo en Emisión'
+            Estatus_Lead_Prospecto = 'Contacto Efectivo'
+            Owner = '2731176000300503001'
+            prospect.descripcion += ` Placas: ${prospect.placas || "N/A"} NIV: ${prospect.niv || "N/A"} Número de Motor: ${prospect.num_motor || "N/A"}`;
+        }
+        // Si el paso es 4, agregar placas, NIV y número de motor
+        if (prospect.paso === 6) {
+            EstatusContactacion = 'Emisión Exitosa'
+            Estatus_Lead_Prospecto = 'Contacto Efectivo'
+            Owner = '2731176000300503001'
+            prospect.descripcion += ` Placas: ${prospect.placas || "N/A"} NIV: ${prospect.niv || "N/A"} Número de Motor: ${prospect.num_motor || "N/A"}`;
+            console.log('Paso 6')
         }
     } else {
         // Descripción para otros pasos
@@ -1791,7 +1822,12 @@ async function sendCRM(token, prospect) {
             "direccion": prospect.direccion_completa || "N/A",
             "mkT_Campaigns": prospect.utm && prospect.utm !== "N/A" ? prospect.utm : "",
             "GCLID": prospect.gclid && prospect.gclid !== "N/A" ? prospect.gclid : "",
-            "IPSesion": prospect.ipSesion || ""
+            "IPSesion": prospect.ipSesion || "",
+            "Estatus_de_Contactacion" : EstatusContactacion,
+            "Estatus_Lead_Prospecto" : Estatus_Lead_Prospecto,
+            "owner_id" : Owner,
+            "idSalida" : prospect.urlDocto,
+            "Diferenciador" : prospect.error,
         }
     });
 
