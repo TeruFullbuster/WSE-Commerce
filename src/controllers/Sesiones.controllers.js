@@ -763,7 +763,8 @@ async function postProspect(prospect, token) {
         console.log(response)
         // Verificar si la respuesta es un JSON válido y contiene "success"
         if (!response || response.success !== true) {
-            throw new Error(`Error en la respuesta de CRM: ${response?.error || "Desconocido"}`);
+            const updateError = await ActualizaLeadIDCPY(prospect.id, "500");
+            throw new Error(`Error en la respuesta de CRM: ${response?.error || "Desconocido"}, updateError: ${updateError}`);
         }
 
         // Extraer datos de la respuesta
@@ -774,7 +775,9 @@ async function postProspect(prospect, token) {
         const newId = result?.details?.id;
 
         if (!success || !newId) {
-            throw new Error("No se recibió un ID válido de Zoho CRM.");
+            const updateError = await ActualizaLeadIDCPY(prospect.id, "500");
+            throw new Error(`No se recibió un ID válido de Zoho CRM, updateError
+            : ${updateError}`);
         }
 
         console.log(`✅ Lead registrado correctamente con ID: ${newId}`);
