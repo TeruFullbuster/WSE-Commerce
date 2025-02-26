@@ -636,6 +636,27 @@ export const ActualizaLeadIDCPY = async (id, leadidcpy) => {
         };
     }
 };
+// Función para actualizar el LeadidCPY utilizando el hash
+export const ActualizaIDDESK = async (id, idDesk) => {
+    try {
+        // Obtener el original_id a partir del hash
+        const originalId = id;  // Usamos el hash para obtener el ID original
+
+        // Ejecutar el UPDATE con el original_id
+        const [result] = await pool.query('UPDATE SesionesFantasma SET idDesk = ? WHERE id = ?', [idDesk, originalId]);
+
+        if (result.affectedRows === 0) {
+            return { message: 'Prospecto no encontrado' };
+        }
+
+        return { message: 'Prospecto actualizado exitosamente' };
+    } catch (error) {
+        return {
+            message: 'Algo está mal',
+            error: error.message
+        };
+    }
+};
 
 // Función para actualizar el UpdateDescCot utilizando el hash
 export const UpdateDescCot = async (req, res) => {
@@ -711,104 +732,71 @@ async function fetchProspectsEcommerce() {
 }
 
 async function postProspect(prospect, token) {
-    console.log(token);
-    console.log(prospect);
-    console.log(prospect.id)
-    // Crear los headers de la petición
-    const myHeaders = {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${token}`
-    };
-
-    // Procesar el campo gclid para manejar múltiples valores separados por coma
-    if (prospect.gclid && prospect.gclid.includes(",")) {
-        prospect.gclid = prospect.gclid.split(",")[0].trim();
-    }
-
-    // Reconstruir valores si el paso es 3 o 4
-    if (prospect.paso === 3 || prospect.paso === 4) {
-        // Reconstruir fecha de nacimiento
-        if (prospect.dia_nac && prospect.mes_nac && prospect.anio_nac) {
-            prospect.edad = `${prospect.anio_nac}-${prospect.mes_nac}-${prospect.dia_nac}`;
-        }
-
-        // Agregar RFC si está disponible
-        if (prospect.rfc) {
-            prospect.RFC = prospect.rfc;
-        }
-
-        // Agregar dirección completa
-        prospect.direccion_completa = `${prospect.calle_residencia} ${prospect.numero_ext_residencia || ""}${prospect.numero_int_residencia ? " Int. " + prospect.numero_int_residencia : ""}, ${prospect.colonia_residencia}, ${prospect.municipio_residencia}, ${prospect.estado_residencia}, México, ${prospect.codigo_postal}`;
-
-        // Reconstruir descripción con datos adicionales
-        prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} Edad: ${prospect.edad} Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} Código Postal: ${prospect.codigo_postal} ${prospect.descripcion ? `Descripción vehicular: ${prospect.descripcion}` : ""} RFC: ${prospect.RFC || "N/A"} Dirección: ${prospect.direccion_completa || "N/A"} Prima Total: ${prospect.precio_cotizacion}`;
-
-        // Si el paso es 4, agregar placas, NIV y número de motor
-        if (prospect.paso === 4) {
-            prospect.descripcion += ` Placas: ${prospect.placas || "N/A"} NIV: ${prospect.niv || "N/A"} Número de Motor: ${prospect.num_motor || "N/A"}`;
-        }
-    } else {
-        // Descripción para otros pasos
-        prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} Edad: ${calcularEdad(prospect.edad)} Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} Código Postal: ${prospect.codigo_postal} ${prospect.descripcion ? `, Descripción vehicular: ${prospect.descripcion}` : ""} Prima Total: ${prospect.precio_cotizacion}`;
-    }
-
-    console.log(prospect);
-
-    // Construir el cuerpo de la petición
-    const raw = JSON.stringify({
-        "ProspectoZoho": {
-            "email": prospect.correo,
-            "ramo": "AUTOMOVILES",
-            "zip_Code": prospect.codigo_postal,
-            "firstPage": prospect.firstPage,
-            "description": prospect.descripcion,
-            "first_Name": prospect.nombre,
-            "Last_Name": prospect.apellido_paterno,
-            "full_Name": `${prospect.nombre} ${prospect.apellido_paterno}`,
-            "genero": prospect.genero === 0 ? 'Masculino' : 'Femenino',
-            "phone": "+521" + prospect.telefono,
-            "mobile": "+521" + prospect.telefono,
-            "lead_Source": prospect.leadsource,
-            "aseguradora_Campana": prospect.aseguradoracampana || "COMPARADOR",
-            "Marca": prospect.marca,
-            "Modelo": prospect.modelo,
-            "RFC": prospect.RFC || "N/A",
-            "direccion": prospect.direccion_completa || "N/A",
-            "mkT_Campaigns": prospect.utm && prospect.utm !== "N/A" ? prospect.utm : "",
-            "GCLID": prospect.gclid && prospect.gclid !== "N/A" ? prospect.gclid : "",
-            "IPSesion": prospect.ipSesion || ""
-        }
-    });
-
-    console.log(raw);
-
-    // Configuración de la petición
-    const requestOptions = {
-        method: "POST",
-        headers: myHeaders,
-        body: raw,
-        redirect: "follow"
-    };
-
     try {
-        const response = await fetch("https://wsservicios.gmag.com.mx/ZoohoTools/CRM/CrearProspectosSI", requestOptions);
-        console.log(response);
+        let response, result;
 
-        if (!response.ok) {
-            throw new Error(`Error ${response.status}: ${response.statusText}`);
+        switch (true) {
+            case (prospect.paso === 5):
+                // Enviar en paralelo a Zoho CRM y Zoho Desk
+                [response] = await Promise.all([
+                    sendCRM(token, prospect),
+                    sendDESK(token, prospect)
+                ]);
+                console.log("Respuesta CRM y Desk:", response);
+                break;
+
+            case (prospect.paso === 6):
+                // Enviar solo a Zoho Desk
+                response = await sendCRM(token, prospect);
+                console.log("Respuesta CRM:", response);
+                break;
+
+            case (prospect.paso <= 4):
+                // Enviar solo a Zoho CRM
+                response = await sendCRM(token, prospect);
+                console.log("Respuesta CRM:", response);
+                break;
+
+            default:
+                throw new Error("Paso no válido. No se envió ni a CRM ni a Desk.");
+        }
+        console.log(response)
+        // Verificar si la respuesta es un JSON válido y contiene "success"
+        if (!response || response.success !== true) {
+            throw new Error(`Error en la respuesta de CRM: ${response?.error || "Desconocido"}`);
         }
 
-        const result = await response.json();
-        console.log(result);
+        // Extraer datos de la respuesta
+        result = response.data.data[0];
+        console.log(result)
+        // Validar si la respuesta contiene "data" y el status es "success"
+        const success = result?.status === "success";
+        const newId = result?.details?.id;
 
-        if (result && result.data && result.data[0] && result.data[0].details && result.data[0].details.id) {
-            const newId = result.data[0].details.id;
+        if (!success || !newId) {
+            throw new Error("No se recibió un ID válido de Zoho CRM.");
+        }
+
+        console.log(`✅ Lead registrado correctamente con ID: ${newId}`);
+
+        // Si el lead fue enviado a Zoho CRM / DESK y tiene ID, actualizarlo
+        if (prospect.paso === 5) {
+            console.log("Paso 5 - Actualizando IDs en CRM y DESK...");
+            const updateResult = await ActualizaLeadIDCPY(prospect.id, newId);
+            const updateResultDESK = await ActualizaIDDESK(prospect.id, newId);
+            console.log("Actualización DESK:", updateResultDESK);
+            return { success: true, result: updateResult, respuesta: result };
+        } else if (prospect.paso === 6) {
+            console.log("Paso 6 - Actualizando ID en CRM...");
+            const updateResult = await ActualizaLeadIDCPY(prospect.id, newId);
+            return { success: true, result: updateResult, respuesta: result };
+        } else {
+            console.log("Paso 4 o menos - Actualizando ID en CRM...");
             const updateResult = await ActualizaLeadIDCPY(prospect.id, newId);
             return { success: true, result: updateResult, respuesta: result };
         }
-
-        return { success: true, result, respuesta: result };
     } catch (error) {
+        console.error("❌ Error en postProspect:", error);
         return { success: false, error: error.message, respuesta: error };
     }
 }
@@ -854,7 +842,7 @@ export async function RecuperaProspectos(req, res) {
            
             // Agregar un delay de 10 segundos entre cada iteración
              // Guardar el ID del prospecto enviado exitosamente
-             enviados.push("Texto" + prospect.id);  // Asegúrate de que `prospect.id` es el campo correcto
+             enviados.push("Data: " + prospect.id);  // Asegúrate de que `prospect.id` es el campo correcto
              console.log("Enviados " + enviados)
             await delay(5000);
         }
@@ -1741,4 +1729,177 @@ const getOriginalIdFromHash = async (hash) => {
     return rows[0].original_id;  // Devolver el ID original
 };
 
+
+async function sendCRM(token, prospect) {
+    console.log(prospect)
+    // Procesar el campo gclid para manejar múltiples valores separados por coma
+    if (prospect.gclid && prospect.gclid.includes(",")) {
+        prospect.gclid = prospect.gclid.split(",")[0].trim();
+    }
+
+    // Reconstruir valores si el paso es 3 o 4
+    if (prospect.paso === 3 || prospect.paso === 4) {
+        // Reconstruir fecha de nacimiento
+        if (prospect.dia_nac && prospect.mes_nac && prospect.anio_nac) {
+            prospect.edad = `${prospect.anio_nac}-${prospect.mes_nac}-${prospect.dia_nac}`;
+        }
+
+        // Agregar RFC si está disponible
+        if (prospect.rfc) {
+            prospect.RFC = prospect.rfc;
+        }
+
+        // Agregar dirección completa
+        prospect.direccion_completa = `${prospect.calle_residencia} ${prospect.numero_ext_residencia || ""}${prospect.numero_int_residencia ? " Int. " + prospect.numero_int_residencia : ""}, ${prospect.colonia_residencia}, ${prospect.municipio_residencia}, ${prospect.estado_residencia}, México, ${prospect.codigo_postal}`;
+
+        // Reconstruir descripción con datos adicionales
+        prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} Edad: ${prospect.edad} Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} Código Postal: ${prospect.codigo_postal} ${prospect.descripcion ? `Descripción vehicular: ${prospect.descripcion}` : ""} RFC: ${prospect.RFC || "N/A"} Dirección: ${prospect.direccion_completa || "N/A"} Prima Total: ${prospect.precio_cotizacion}`;
+
+        // Si el paso es 4, agregar placas, NIV y número de motor
+        if (prospect.paso === 4) {
+            prospect.descripcion += ` Placas: ${prospect.placas || "N/A"} NIV: ${prospect.niv || "N/A"} Número de Motor: ${prospect.num_motor || "N/A"}`;
+        }
+    } else {
+        // Descripción para otros pasos
+        prospect.descripcion = `El usuario seleccionó un vehículo con los siguientes datos: Descripción: ${prospect.submarca} Marca: ${prospect.marca} Modelo: ${prospect.modelo} Edad: ${calcularEdad(prospect.edad)} Género: ${prospect.genero === 0 ? "Masculino" : "Femenino"} Código Postal: ${prospect.codigo_postal} ${prospect.descripcion ? `, Descripción vehicular: ${prospect.descripcion}` : ""} Prima Total: ${prospect.precio_cotizacion}`;
+    }
+
+    console.log(prospect);
+
+    // Construir el cuerpo de la petición
+    const raw = JSON.stringify({
+        "ProspectoZoho": {
+            "email": prospect.correo,
+            "ramo": "AUTOMOVILES",
+            "zip_Code": prospect.codigo_postal,
+            "firstPage": prospect.firstPage,
+            "description": prospect.descripcion,
+            "first_Name": prospect.nombre,
+            "Last_Name": prospect.apellido_paterno,
+            "full_Name": `${prospect.nombre} ${prospect.apellido_paterno}`,
+            "genero": prospect.genero === 0 ? 'Masculino' : 'Femenino',
+            "phone": "+521" + prospect.telefono,
+            "mobile": "+521" + prospect.telefono,
+            "lead_Source": prospect.leadsource,
+            "aseguradora_Campana": prospect.aseguradoracampana || "COMPARADOR",
+            "Marca": prospect.marca,
+            "Modelo": prospect.modelo,
+            "RFC": prospect.RFC || "N/A",
+            "direccion": prospect.direccion_completa || "N/A",
+            "mkT_Campaigns": prospect.utm && prospect.utm !== "N/A" ? prospect.utm : "",
+            "GCLID": prospect.gclid && prospect.gclid !== "N/A" ? prospect.gclid : "",
+            "IPSesion": prospect.ipSesion || ""
+        }
+    });
+
+    console.log(raw);
+
+    // Crear los headers de la petición
+    const myHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    };
+
+    // Configuración de la petición
+    const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+    };
+
+    try {
+        const response = await fetch("https://wsservicios.gmag.com.mx/ZoohoTools/CRM/CrearProspectosSI", requestOptions);
+        
+        // Verificar si la respuesta es exitosa (código 200-299)
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        console.log(data)
+        return { success: true, data };
+        
+    } catch (error) {
+        console.error("❌ Error en sendCRM:", error);
+        return { success: false, error: error.message };
+    }
+}
+
+
+async function sendDESK (token, data) {
+
+    // Construir el cuerpo de la petición
+    const raw = JSON.stringify({
+            "DeskService": {
+                "TicketInfo": {
+                    "category": "E-COMMERCE",
+                    "subCategory": "E-COMMERCE",
+                    "statusType": "Open",
+                    "subject": "Póliza sin cobro - E-commerce",
+                    "departmentId": "212945000303532029",
+                    "channel": "WS",
+                    "resolution": "Urgente",
+                    "closedTime": "null",
+                    "approvalCount": "0",
+                    "timeEntryCount": "0",
+                    "email": "aruiz@segurointeligente.mx",
+                    "contactId": "212945000225587005",
+                    "assigneeId": "",
+                    "description": `Fallo en cobro, hay poliza, pero no hay cobro`,
+                    "status": "Nuevo",
+                    "customFields": {
+                        "Cobranza": "--Ninguna--",
+                        "Aseguradora": data.aseguradoraCampana,
+                        "ID_CRM": "",
+                        "Medio_de_pago": "--Ninguna--",
+                        "Numero_de_poliza": "EK42001740",
+                        "Origen_de_Contacto": "--Ninguna--",
+                        "inciso": 0,
+                        "Aplicar_forma_de_pago": "--Ninguna--",
+                        "Opcion_de_pago": "--Ninguna--",
+                        "Oportunidad": "",
+                        "Estatus_de_Solicitud": "--Ninguna--",
+                        "Resultado_de_Reclutamiento": null,
+                        "Resultado_Cobranza": "",
+                        "Despacho": "--Ninguna--",
+                        "Movimiento_a_realizar": "--Ninguna--",
+                        "Actividad_Servicio_al_Cliente": "--Ninguna--",
+                        "Ramo": null,
+                        "Sub_Ramo": null
+                    }
+                }
+            }
+    });
+
+    console.log(raw);
+
+    // Crear los headers de la petición
+    const myHeaders = {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${token}`
+    };
+    // Configuración de la petición
+    const requestOptions = {
+        method: "POST",
+        headers: myHeaders,
+        body: raw,
+        redirect: "follow"
+    };
+    try {
+        const response = await fetch("https://wsservicios.gmag.com.mx/ZoohoTools/DeskServices/CrearTicket", requestOptions);
+        
+        // Verificar si la respuesta es exitosa (código 200-299)
+        if (!response.ok) {
+            throw new Error(`HTTP error! Status: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return { success: true, data };
+        
+    } catch (error) {
+        console.error("❌ Error en sendCRM:", error);
+        return { success: false, error: error.message };
+    }
+}
 
