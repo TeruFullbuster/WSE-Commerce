@@ -521,13 +521,13 @@ export const updateProspectoPaso4 = async (req, res) => {
 
         // Evaluamos el paso basado en las condiciones proporcionadas
         let Paso = 4; // Valor por defecto
-
-        if (ResponseMAGAPI?.isPoliza === 1 && ResponseMAGAPI?.isCobro === 0 && ResponseMAGAPI?.isError === 1) {
+        
+        if (ResponseMAGAPI?.isPoliza === true && ResponseMAGAPI?.isCobro === false && ResponseMAGAPI?.isError === true) {
             Paso = 5; // Caso donde hay póliza, no se cobró y hubo error
-        } else if (ResponseMAGAPI?.isPoliza === 1 && ResponseMAGAPI?.isCobro === 1 && ResponseMAGAPI?.isError === 0) {
+        } else if (ResponseMAGAPI?.isPoliza === true && ResponseMAGAPI?.isCobro === true && ResponseMAGAPI?.isError === false) {
             Paso = 6; // Caso donde hay póliza, se cobró y no hubo error
         }
-
+        
         // Ejecutamos la actualización con el paso correspondiente
         const [result] = await pool.query(
             `UPDATE SesionesFantasma 
