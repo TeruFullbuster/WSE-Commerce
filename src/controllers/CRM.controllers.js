@@ -1093,7 +1093,8 @@ const enviarCorreo = async (response, NotificarMail, TipoNotificacion) => {
     cc: ['ehernandez@segurointeligente.mx','eescoto@segurointeligente.mx', 'cguzman@segurointeligente.mx', 
       'lalonso@segurointeligente.mx','mgarcia@segurointeligente.mx','aescamilla@segurointeligente.mx',
       'ygarcia@segurointeligente.mx', 'lleon@segurointeligente.mx', 'ilince@segurointeligente.mx',
-      'ahernandez@gmag.com.mx', 'jgarma@segurointeligente.mx','vhernandez@segurointeligente.mx', 'mperez@segurointeligente.mx'],
+      'ahernandez@gmag.com.mx', 'jgarma@segurointeligente.mx','vhernandez@segurointeligente.mx',
+      'blloret@segurointeligente.mx','mperez@segurointeligente.mx'],
     subject: subject,
     html: htmlContent
   };

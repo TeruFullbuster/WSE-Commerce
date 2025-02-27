@@ -1892,7 +1892,7 @@ async function sendDESK (token, data) {
                         "Aseguradora": data.aseguradoraCampana,
                         "ID_CRM": "",
                         "Medio_de_pago": "--Ninguna--",
-                        "Numero_de_poliza": "EK42001740",
+                        "Numero_de_poliza": "",
                         "Origen_de_Contacto": "--Ninguna--",
                         "inciso": 0,
                         "Aplicar_forma_de_pago": "--Ninguna--",
@@ -1904,8 +1904,8 @@ async function sendDESK (token, data) {
                         "Despacho": "--Ninguna--",
                         "Movimiento_a_realizar": "--Ninguna--",
                         "Actividad_Servicio_al_Cliente": "--Ninguna--",
-                        "Ramo": null,
-                        "Sub_Ramo": null
+                        "Ramo": "AUTOMOVILES",
+                        "Sub_Ramo": "AUTOMOVILES INDIVIDUALES"
                     }
                 }
             }
