@@ -508,7 +508,7 @@ export const updateProspectoPaso3 = async (req, res) => {
 export const updateProspectoPaso4 = async (req, res) => {
     const { id } = req.params; // Este es el hash que recibimos
     const { leadidcpy, leadsource, Comentario, Banco, tTarjeta, ResponseMAGAPI } = req.body;
-    
+    let leadsourcefinal  = leadsource;
     try {
         // Obtener el original_id a partir del hash
         const originalId = await getOriginalIdFromHash(id);
@@ -518,16 +518,21 @@ export const updateProspectoPaso4 = async (req, res) => {
 
         // Verificar si leadidcpy está vacío o no está presente
         const leadidcpyValue = leadidcpy || null;
-
+        // Llamar al procedimiento almacenado pasando el original_id como parámetro
+        const [rows] = await pool.query('CALL FetchProspectID(?)', [originalId]);
+        const data = rows[0][0];
+        console.log("Datos del prospecto:", data);
         // Evaluamos el paso basado en las condiciones proporcionadas
         let Paso = 4; // Valor por defecto
-        
-        if (ResponseMAGAPI?.isPoliza === true && ResponseMAGAPI?.isCobro === false && ResponseMAGAPI?.isError === true) {
+        console.log
+        if (ResponseMAGAPI?.isPoliza === true && ResponseMAGAPI?.isCobro === false && (ResponseMAGAPI?.isError === true || ResponseMAGAPI?.isError === false)) {
             Paso = 5; // Caso donde hay póliza, no se cobró y hubo error
+            leadsourcefinal = `E-COMMERCE-${data.aseguradoracampana}-ESC`;
         } else if (ResponseMAGAPI?.isPoliza === true && ResponseMAGAPI?.isCobro === true && ResponseMAGAPI?.isError === false) {
             Paso = 6; // Caso donde hay póliza, se cobró y no hubo error
+            leadsourcefinal = `E-COMMERCE-${data.aseguradoracampana}-FO`;
         }
-        
+        console.log(ResponseMAGAPI?.isPoliza)
         // Ejecutamos la actualización con el paso correspondiente
         const [result] = await pool.query(
             `UPDATE SesionesFantasma 
@@ -550,7 +555,7 @@ export const updateProspectoPaso4 = async (req, res) => {
             WHERE id = ?`, 
             [
                 leadidcpyValue,  // Si es null, la base de datos lo manejará
-                leadsource,
+                leadsourcefinal,
                 Comentario,
                 Banco,
                 tTarjeta,
@@ -1885,7 +1890,7 @@ async function sendDESK (token, data) {
                     "email": "aruiz@segurointeligente.mx",
                     "contactId": "212945000225587005",
                     "assigneeId": "",
-                    "description": `Fallo en cobro, hay poliza, pero no hay cobro`,
+                    "description": `Fallo en cobro, hay poliza, pero no hay cobro ${data.iddocto}`,
                     "status": "Nuevo",
                     "customFields": {
                         "Cobranza": "--Ninguna--",

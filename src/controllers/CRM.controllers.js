@@ -1338,3 +1338,381 @@ const landingPages = {
     // Puedes agregar más LPs aquí para FBK
   ]
 };
+
+const MandarCampaignFake = async () => {
+  let htmlContent = `<tbody>
+    <tr>
+        <td height="570"
+            style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;border:0px;padding:0px;"
+            valign="top">
+            <a name="Top" style="text-decoration:underline;"></a>
+            <div class="zpcontent-wrapper" id="page-container">
+                <table border="0" cellpadding="0" cellspacing="0" id="page-container"
+                    style="border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;border: 0px; padding: 0px; border-collapse: collapse; text-decoration: none !important;"
+                    width="100%">
+                    <tbody>
+                        <tr>
+                            <td class="txtsize" id="elm_1519753653393"
+                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-collapse: collapse;"
+                                valign="top">
+                                <table bgcolor="transparent" border="0" cellpadding="0" cellspacing="0"
+                                    style="border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;border: 0px; padding: 0px; width: 100%; border-collapse: collapse; background-color: transparent;">
+                                    <tbody>
+                                        <tr>
+                                            <td class="txtsize"
+                                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-top: none none none; border-bottom: none none none;">
+                                                <div class="zpelement-wrapper image" id="elm_1519753653393"
+                                                    style="padding: 0px; background-color: transparent">
+                                                    <div>
+                                                        <table align="left" border="0" cellpadding="0" cellspacing="0"
+                                                            class="zpAlignPos"
+                                                            style=" border:0px;border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;text-align: left; width: 100%; padding: 0px; border: 0px; border-collapse: collapse; width: 100%; text-align: left;">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td class="paddingcomp"
+                                                                        style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 7px 15px; text-align: center; padding-top: 7px; padding-bottom: 7px; padding-right: 15px; padding-left: 15px;">
+                                                                        <a href="https://workdrive.zoho.com/file/2h9xpe546298dfc834fd1904cd3dc5dd8be79"
+                                                                            rel="noopener noreferrer"
+                                                                            style="text-decoration:underline;border: 0px;"
+                                                                            target="_blank"> <img align="left"
+                                                                                alt="VA Arrenadmiento Crédito"
+                                                                                class="zpImage" height="auto" hspace="0"
+                                                                                size="F"
+                                                                                src="https://stratus.campaign-image.com/images/324744000211949011_1_1729625016540_(2).png"
+                                                                                style="border:0 solid;width: 570px; max-width: 570px !important; border: 0px; text-align: left;"
+                                                                                title="https://segurointeligente.mx/"
+                                                                                vspace="0" width="570"> </a> </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="txtsize" id="elm_1584476816631"
+                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-collapse: collapse;"
+                                valign="top">
+                                <table bgcolor="transparent" border="0" cellpadding="0" cellspacing="0"
+                                    style="border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;border: 0px; padding: 0px; width: 100%; border-collapse: collapse; background-color: transparent;">
+                                    <tbody>
+                                        <tr>
+                                            <td class="txtsize"
+                                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-top: none none none; border-bottom: none none none;">
+                                                <div class="zpelement-wrapper image" id="elm_1584476816631"
+                                                    style="padding: 0px; background-color: transparent">
+                                                    <div>
+                                                        <table align="left" border="0" cellpadding="0" cellspacing="0"
+                                                            class="zpAlignPos"
+                                                            style=" border:0px;border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;text-align: left; width: 100%; padding: 0px; border: 0px; border-collapse: collapse; width: 100%; text-align: left;">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td class="paddingcomp"
+                                                                        style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 7px 15px; text-align: center; padding-top: 7px; padding-bottom: 7px; padding-right: 15px; padding-left: 15px;">
+                                                                        <img align="left" class="zpImage" height="auto"
+                                                                            hspace="0" size="F"
+                                                                            src="https://stratus.campaign-image.com/images/324744000211949011_zc_v1_1740434487992_manual_de_cumplimiento_2025.jpg"
+                                                                            style="width: 570px; max-width: 570px !important; border: 0px; text-align: left"
+                                                                            title="ENR 2020" vspace="0" width="570">
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="txtsize" id="elm_1607025925791"
+                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-collapse: collapse;"
+                                valign="top">
+                                <div class="zpelement-wrapper" id="elm_1607025925791" style="padding-right: 0px">
+                                    <table border="0" cellpadding="0" cellspacing="0" class="zpAlignPos"
+                                        style=" border:0px;border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;padding: 0px; border: 0px; border-collapse: collapse;"
+                                        width="100%">
+                                        <tbody>
+                                            <tr>
+                                                <td class="paddingcomp"
+                                                    style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 7px 15px; font-size: 12pt; font-family: Arial, Helvetica; line-height: 19pt; border-top: 0px none; border-bottom: 0px none; padding-top: 20px; padding-bottom: 10px; padding-right: 15px; padding-left: 15px;">
+                                                    <div style="">
+                                                        <p align="center"
+                                                            style="font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;line-height: 19pt; text-align: center;">
+                                                            <span
+                                                                style="font-family: Tahoma, Geneva, sans-serif; background-color: transparent; color: rgb(0, 52, 95)">
+                                                                <font style="font-size: 14pt"></font>
+                                                            </span><span> </span></p>
+                                                        <p align="center"
+                                                            style="font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;line-height: 19pt; text-align: center;">
+                                                            <font color="#004ab5" face="Arial, Helvetica"
+                                                                style="font-size: 14pt"><b style=""><span> </span></b>
+                                                            </font>
+                                                        </p>
+                                                        <p align="center"
+                                                            style="font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;line-height: 19pt; text-align: center;">
+                                                            <font face="Arial, Helvetica" style=""><b style="">
+                                                                    <font color="#2828da" face="Arial, Helvetica"
+                                                                        style="font-size: 14pt"><b style=""><span>
+                                                                                <b><span>Recordatorio Manual de
+                                                                                        Cumplimiento 2025</span></b>
+                                                                            </span></b></font>
+                                                                </b></font>
+                                                        </p>
+                                                        <font color="#004ab5" face="Arial, Helvetica"
+                                                            style="font-size: 14pt"><b style=""> </b></font>
+                                                        <p
+                                                            style="margin: 0;padding: 0px;font-family:Arial, Helvetica, sans-serif; color:#000000;line-height:1.7;font-family:Arial,verdana;font-size:12pt;padding:0px;">
+                                                        </p> <span
+                                                            style="font-size: 14pt; color: rgb(0, 52, 95); font-family: Tahoma, Geneva, sans-serif; background-color: transparent"></span>
+                                                        <p
+                                                            style="margin: 0;padding: 0px;font-family:Arial, Helvetica, sans-serif; color:#000000;line-height:1.7;font-family:Arial,verdana;font-size:12pt;padding:0px;">
+                                                        </p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="txtsize" id="elm_1610563420028"
+                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-collapse: collapse;"
+                                valign="top">
+                                <div class="zpelement-wrapper" id="elm_1610563420028" style="padding-right: 0px">
+                                    <table border="0" cellpadding="0" cellspacing="0" class="zpAlignPos"
+                                        style=" border:0px;border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;padding: 0px; border: 0px; border-collapse: collapse;"
+                                        width="100%">
+                                        <tbody>
+                                            <tr>
+                                                <td class="paddingcomp"
+                                                    style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 7px 15px; font-size: 12pt; font-family: Arial, Helvetica; line-height: 19pt; border-top: 0px none; border-bottom: 0px none; padding-top: 7px; padding-bottom: 7px; padding-right: 25px; padding-left: 25px;">
+                                                    <div style="">
+                                                        <p align="justify"
+                                                            style="font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;line-height: 19pt; text-align: justify;">
+                                                            <font color="#333333" face="Arial, Helvetica"
+                                                                style="color: rgb(51, 51, 51)">
+                                                                <font style="font-size: 11pt"></font>
+                                                            </font>
+                                                        </p>
+                                                        <div align="justify" style="text-align: justify"><span
+                                                                style="font-size: 11pt; background-color: transparent"></span>
+                                                            <p align="justify"
+                                                                style="font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;line-height: 19pt; text-align: justify;">
+                                                                <font face="Arial, Helvetica" style="font-size: 12pt">
+                                                                </font>
+                                                            </p>
+                                                        </div>
+                                                        <p align="justify"
+                                                            style="line-height:1.7;font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;text-align: justify; line-height: 19pt;">
+                                                            <font color="#000000" face="Arial, Helvetica"
+                                                                style="font-size: 12pt; color: rgb(0, 0, 0)">En esta
+                                                                ocasión te compartimos un ejemplar del </font>
+                                                            <font color="#2828da" face="Arial, Helvetica"
+                                                                style="font-size: 12pt"><b>MC actualizado</b></font>
+                                                            <font color="#000000" face="Arial, Helvetica"
+                                                                style="font-size: 12pt; color: rgb(0, 0, 0)">, el cual
+                                                                contempla diversas modificaciones legales que ha dado a
+                                                                conocer la autoridad. El Manual contiene también la
+                                                                versión actualizada de la </font>
+                                                            <font color="#2828da" face="Arial, Helvetica"
+                                                                style="font-size: 12pt"><b>Metodología de Gestión de
+                                                                    Riesgos</b></font>
+                                                            <font color="#000000" face="Arial, Helvetica"
+                                                                style="font-size: 12pt; color: rgb(0, 0, 0)"> de </font>
+                                                            <font color="#2828da" face="Arial, Helvetica"
+                                                                style="font-size: 12pt"><b>VA FINANCIERA</b></font>
+                                                            <font color="#000000" face="Arial, Helvetica"
+                                                                style="font-size: 12pt; color: rgb(0, 0, 0)">. </font>
+                                                        </p>
+                                                        <p align="justify"
+                                                            style="line-height:1.7;font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;text-align: justify; line-height: 19pt;">
+                                                            <br></p>
+                                                        <div align="justify" style="text-align: justify"><span>
+                                                                <font style="font-size: 11pt"><span><span>
+                                                                            <p
+                                                                                style="font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;line-height: 19pt; text-align: left;">
+                                                                                <font color="#000000"
+                                                                                    face="Arial, Helvetica"
+                                                                                    style="font-size: 12pt; color: rgb(0, 0, 0)">
+                                                                                    Puedes descargar el documento en el
+                                                                                    botón que aparece más abajo.</font>
+                                                                            </p>
+                                                                        </span></span></font>
+                                                            </span></div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="txtsize" id="elm_1607026098701"
+                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-collapse: collapse;"
+                                valign="top">
+                                <div class="zpelement-wrapper" id="elm_1607026098701" style="padding-right: 0px">
+                                    <table border="0" cellpadding="0" cellspacing="0" class="zpAlignPos"
+                                        style=" border:0px;border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;padding: 0px; border: 0px; border-collapse: collapse;"
+                                        width="100%">
+                                        <tbody>
+                                            <tr>
+                                                <td class="paddingcomp"
+                                                    style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 7px 15px; font-size: 12pt; font-family: Arial, Helvetica; line-height: 19pt; border-top: 0px none; border-bottom: 0px none; padding-top: 7px; padding-bottom: 7px; padding-right: 15px; padding-left: 15px;">
+                                                    <div style="">
+                                                        <p align="center"
+                                                            style="font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;line-height: 19pt; text-align: center;">
+                                                            <b><span
+                                                                    style="font-size: 11pt; font-family: Arial, Helvetica">Verónica
+                                                                    Castañeda</span><br></b></p>
+                                                        <p align="center"
+                                                            style="font-family:Arial,verdana;font-size:12pt; color:#000000;padding:0px;margin: 0;line-height: 19pt; text-align: center;">
+                                                            <font face="Arial, Helvetica" style="">
+                                                                <font style="font-size: 11pt"><b>Oficial de
+                                                                        Cumplimiento</b></font>
+                                                            </font>
+                                                        </p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="txtsize" id="elm_1588098567671"
+                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-collapse: collapse;"
+                                valign="top">
+                                <div class="zpelement-wrapper spacebar" id="elm_1588098567671"
+                                    style="background-color: transparent">
+                                    <table bgcolor="transparent" border="0" cellpadding="0" cellspacing="0"
+                                        class="zpAlignPos"
+                                        style=" border:0px;border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;padding: 0px; border: 0px; border-collapse: collapse; font-size: 5px; height: 20px;"
+                                        width="100%">
+                                        <tbody>
+                                            <tr>
+                                                <td
+                                                    style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;border:0px;padding: 0px; border: 0px; font-size: 5px; height: 20px; border-top: none none none; border-bottom: none none none;">
+                                                    &nbsp;&nbsp;&nbsp; </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="txtsize" id="elm_1588098497884"
+                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-collapse: collapse;"
+                                valign="top">
+                                <table bgcolor="transparent" cellpadding="0" cellspacing="0"
+                                    style="border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;border: 0px; border-collapse: collapse; border: none;"
+                                    width="100%">
+                                    <tbody>
+                                        <tr>
+                                            <td class="paddingcomp"
+                                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 7px 15px; border-top: none none none; border-bottom: none none none; padding-top: 7px; padding-bottom: 7px; padding-right: 15px; padding-left: 15px;">
+                                                <div class="zpelement-wrapper buttonElem" id="elm_1588098497884">
+                                                    <div class="zpAlignPos" style="text-align: center">
+                                                        <table align="center" cellpadding="0" cellspacing="0"
+                                                            style="border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;border: none; padding: 0px; border: 0px; margin: 0px auto; border-collapse: separate;">
+                                                            <tbody>
+                                                                <tr>
+                                                                    <td align="center" class="txtsize"
+                                                                        style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px; color: rgb(255, 255, 255); font-family: Arial; font-weight: bold; text-align: center; border-radius: 110px; text-align: center; cursor: pointer;">
+                                                                        <a href="https://workdrive.zoho.com/file/gum0l62f8f9e06b964a518d914a859a17a1f0"
+                                                                            rel="noopener noreferrer"
+                                                                            style="text-decoration:underline;padding: 0px 0px; background-color: rgb(0, 155, 221); width: 221px; height: 40px; font-size: 12pt; direction: ltr; font-family: Arial; color: rgb(255, 255, 255); cursor: pointer; text-decoration: none; border-radius: 110px; border: 0px solid rgb(255, 255, 255); border-collapse: separate; display: table; text-align: center;"
+                                                                            target="_blank">
+                                                                            <font
+                                                                                style="color: rgb(255, 255, 255); display: table-cell; vertical-align: middle">
+                                                                                Descargar manual </font>
+                                                                        </a> </td>
+                                                                </tr>
+                                                            </tbody>
+                                                        </table>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td class="txtsize" id="elm_1518458438709"
+                                style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 0px 0px; border-collapse: collapse;"
+                                valign="top">
+                                <div class="zpelement-wrapper" id="elm_1518458438709" style="padding-right: 0px">
+                                    <table border="0" cellpadding="0" cellspacing="0" class="zpAlignPos"
+                                        style=" border:0px;border-collapse:collapse;border-collapse:collapse; mso-table-lspace:0pt; mso-table-rspace:0pt;font-size:12px;padding: 0px; border: 0px; border-collapse: collapse;"
+                                        width="100%">
+                                        <tbody>
+                                            <tr>
+                                                <td class="paddingcomp"
+                                                    style="border-collapse:collapse; mso-table-lspace:0pt; font-size:12px;font-family:Arial, Helvetica, sans-serif; mso-table-rspace:0pt;font-size:12px;padding:7px;border: 0px; padding: 7px 15px; font-size: 12pt; font-family: Arial, Helvetica; line-height: 19pt; border-top: 0px none; border-bottom: 0px none; padding-top: 7px; padding-bottom: 7px; padding-right: 15px; padding-left: 15px;">
+                                                    <div style="">
+                                                        <div style="text-align: center">
+                                                            <font color="#666666"><b><span> <b
+                                                                            style="color: rgb(102, 102, 102); font-family: Arial, verdana; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; orphans: 2; text-align: center; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; background-color: rgb(255, 255, 255); text-decoration-color: initial">VA
+                                                                            Arrendamiento y Crédito | Tu Mejor Socio</b>
+                                                                    </span></b></font>
+                                                        </div>
+                                                        <div style="text-align: center">
+                                                            <font color="#666666">&nbsp;Este email fue enviado con ♥ por
+                                                                VA Arrendamiento y Crédito | Todos los Derechos
+                                                                Reservados©2025.&nbsp;​​​​​​​Consulta nuestras Políticas
+                                                                de Uso y nuestro Aviso de Privacidad en <span><a
+                                                                        alt="VA SERVICIOS"
+                                                                        href="https://www.va-servicios.mx/"
+                                                                        rel="noopener noreferrer"
+                                                                        style="text-decoration:underline;color: rgb(102, 102, 102);"
+                                                                        target="_blank" title="VA SERVICIOS">
+                                                                        <font color="#666666"
+                                                                            style="color: rgb(102, 102, 102)"> VA
+                                                                            SERVICIOS</font>
+                                                                    </a></span></font>
+                                                        </div>
+                                                        <div style="text-align: center">
+                                                            <font color="#666666"><span><span
+                                                                        style="color: rgb(67, 67, 67); font-family: Arial, verdana; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; orphans: 2; text-align: center; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; background-color: rgb(255, 255, 255); text-decoration-color: initial; float: none; display: inline !important">Una
+                                                                        marca de</span><span
+                                                                        style="color: rgb(67, 67, 67); font-family: Arial, verdana; font-size: 12px; font-style: normal; font-variant-ligatures: normal; font-variant-caps: normal; font-weight: 400; orphans: 2; text-align: center; text-indent: 0px; text-transform: none; white-space: normal; widows: 2; word-spacing: 0px; background-color: rgb(255, 255, 255); text-decoration-color: initial"><span>&nbsp;</span>VA
+                                                                        Servicios SAPI de CV SOFOM ENR</span></span>
+                                                            </font>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </td>
+    </tr>
+</tbody>`
+
+  const mailOptions = {
+    from: 'aruiz@segurointeligente.mx',
+    to: ['raqmartinez@va-financiera.mx','rrojas@va-financiera.mx',
+      'afigueroa@va-financiera.mx','vcastaneda@va-financiera.mx'],  // Destinatarios del correo
+    cc: ['aruiz@siaqs.com','eescoto@segurointeligente.mx'],
+    subject: "AVISO IMPORTANTE - Recordatorio PLD",
+    html: htmlContent
+  };
+
+  const info = await transporter.sendMail(mailOptions);
+  console.log("Correo enviado:", info.response);
+}

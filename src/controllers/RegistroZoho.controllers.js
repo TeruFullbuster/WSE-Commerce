@@ -171,26 +171,7 @@ export const CreateUserZoho = async (req, res) => {
 export const SearchEmailZoho = async (req, res) => {
     const { email } = req.query; // Extraer el correo electrónico de los parámetros de la URL
 
-    const myHeaders = {
-        "X-Zcsrf-Token": TokenZoho,
-        "Cookie": CookieZoho
-    };
-
-    const requestOptions = {
-        method: "GET",
-        headers: myHeaders,
-        redirect: "follow"
-    };
-
-    try {
-        const response = await fetch(`https://one.zoho.com/api/v1/orgs/651915177/reports/users/verifyemail?filter_email_id=${email}`, requestOptions);
-        const result = await response.json();
-        console.log(result);
-        res.status(200).json(result);
-    } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Error en la solicitud' });
-    }
+    
 };
 
 export const SearchActiveAccountZoho = async (req, res) => {
@@ -236,3 +217,31 @@ const obtenerFechaHoraActual = () => {
 };
 
 console.log('Ejecutando')
+
+
+export const EmailExist = async (req, res) => {
+    const { Email ,  Active, Response } = req.body; // Extraer el correo electrónico de los parámetros de la URL
+    
+    try{
+
+        if (!Email) {
+            return res.status(400).json({ message: "El correo electrónico es obligatorio" });
+        }
+        
+        const Respuesta = await pool.query('INSERT INTO ABCGetEmail (EmailConsulta, Active, Response) VALUES (?, ?, ?)', [Email ,  Active, Response]);
+        
+        if(!Respuesta){
+            return res.status(400).json({ message: "Error al revisar el correo electrónico" });
+        }
+    
+        res.json(Respuesta);
+    
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error",
+            error: error.message
+        });
+    }
+};
+
