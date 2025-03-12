@@ -9,6 +9,6 @@ router.post('/Zoho/CreateUser' , CreateUserZoho)
 router.get('/Zoho/SearchEmail' , SearchEmailZoho)
 router.get('/Zoho/SearchActiveAccountZoho', SearchActiveAccountZoho)
 
-router.get('/Zoho/GetEmailExists' , EmailExist)
+router.post('/Zoho/GetEmailExists' , EmailExist)
 
 export default router

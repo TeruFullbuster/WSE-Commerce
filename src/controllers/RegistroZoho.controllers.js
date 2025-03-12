@@ -1,5 +1,7 @@
 import puppeteer from 'puppeteer';
 import fs from 'fs';
+import { pool } from '../db.js'
+import fetch from 'node-fetch';
 
 const TokenZoho = "ozohocsrcoo=3ec516525b5a5d6d2d5d67fcf22d82eaaa2be55f2a558c409d6ba9c2a2bb08101eebb73d1b606741c51e21b4100eacb5b53f0ede3895adb64ba6a9150035f580";
 const CookieZoho = "_iamadt=41ce4fbc40b932094546bfd7e56daf800b032a069c83c003245a027bcf5895a9a839a64e108f98c0025da2d060be732b5403dea5be5b078736b1d2ef7d892330; _iambdt=8bcef46956ab73edd05f7651e118e44b88c11e96cd44ed7067e9aa120272ef2c340b837ae1dd678d4bb57b8bc4b19c462bfd89442864bd387acac245e4f6c367; ozohocsr=3ec516525b5a5d6d2d5d67fcf22d82eaaa2be55f2a558c409d6ba9c2a2bb08101eebb73d1b606741c51e21b4100eacb5b53f0ede3895adb64ba6a9150035f580; _zcsr_tmp=3ec516525b5a5d6d2d5d67fcf22d82eaaa2be55f2a558c409d6ba9c2a2bb08101eebb73d1b606741c51e21b4100eacb5b53f0ede3895adb64ba6a9150035f580; CT_CSRF_TOKEN=3ec516525b5a5d6d2d5d67fcf22d82eaaa2be55f2a558c409d6ba9c2a2bb08101eebb73d1b606741c51e21b4100eacb5b53f0ede3895adb64ba6a9150035f580; wms-tkp-token=800473062-2b1ebff5-666905ff958a7c24dd8a47fa4410bc69; CSRF_TOKEN=3ec516525b5a5d6d2d5d67fcf22d82eaaa2be55f2a558c409d6ba9c2a2bb08101eebb73d1b606741c51e21b4100eacb5b53f0ede3895adb64ba6a9150035f580; app_sfmo9c033add411234523ae1e30223db82ebd=eyJlbnRpdHlfaWQiOiIyMjQzMjMwNjAyNTE3ODE3OTYxIiwibW9kdWxlIjoiQ2hhdHMifQ==; zalb_3309580ed5=5e41c4a69d62a20d11fee6ef8532db03; zalb_6feda1cee0=69ac280cf1ebae8919b2130e5e288c5e; JSESSIONID=1781A9DE412FA9205AA58290E3F8BC24; com_chat_owner=1730849343934; com_avcliq_owner=1730849343935";
@@ -221,20 +223,20 @@ console.log('Ejecutando')
 
 export const EmailExist = async (req, res) => {
     const { Email ,  Active, Response } = req.body; // Extraer el correo electrónico de los parámetros de la URL
-    
+    const webhooks = 'Webhooks';
     try{
 
         if (!Email) {
             return res.status(400).json({ message: "El correo electrónico es obligatorio" });
         }
         
-        const Respuesta = await pool.query('INSERT INTO ABCGetEmail (EmailConsulta, Active, Response) VALUES (?, ?, ?)', [Email ,  Active, Response]);
+        const Respuesta = await pool.query('INSERT INTO ABCGetEmail (ServicioConsulta, EmailConsulta, Active, Response) VALUES (?, ?, ?, ?)', [webhooks, Email ,  Active, Response]);
         
         if(!Respuesta){
             return res.status(400).json({ message: "Error al revisar el correo electrónico" });
         }
     
-        res.json(Respuesta);
+        res.status(200).json({ message: "Correo electrónico revisado correctamente" });
     
     } catch (error) {
         console.error(error);
