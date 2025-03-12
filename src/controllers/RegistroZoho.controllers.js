@@ -225,7 +225,7 @@ export const EmailExist = async (req, res) => {
     const { Email ,  Active, Response } = req.body; // Extraer el correo electrónico de los parámetros de la URL
     const webhooks = 'Webhooks';
     try{
-
+        console.log(req.body);
         if (!Email) {
             return res.status(400).json({ message: "El correo electrónico es obligatorio" });
         }
