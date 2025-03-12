@@ -222,22 +222,30 @@ console.log('Ejecutando')
 
 
 export const EmailExist = async (req, res) => {
-    const { Email ,  Active, Response } = req.body; // Extraer el correo electrónico de los parámetros de la URL
+    const { Email, Active, Response } = req.body; 
     const webhooks = 'Webhooks';
-    try{
+
+    try {
         console.log(req.body);
+
         if (!Email) {
             return res.status(400).json({ message: "El correo electrónico es obligatorio" });
         }
-        
-        const Respuesta = await pool.query('INSERT INTO ABCGetEmail (ServicioConsulta, EmailConsulta, Active, Response) VALUES (?, ?, ?, ?)', [webhooks, Email ,  Active, Response]);
-        
-        if(!Respuesta){
+
+        // 🔥 Convertir `true/false` a `1/0`
+        const activeValue = Active ? 1 : 0;
+
+        const Respuesta = await pool.query(
+            'INSERT INTO ABCGetEmail (ServicioConsulta, EmailConsulta, Active, Response) VALUES (?, ?, ?, ?)', 
+            [webhooks, Email, activeValue, Response]
+        );
+
+        if (!Respuesta) {
             return res.status(400).json({ message: "Error al revisar el correo electrónico" });
         }
-    
+
         res.status(200).json({ message: "Correo electrónico revisado correctamente" });
-    
+
     } catch (error) {
         console.error(error);
         res.status(500).json({
