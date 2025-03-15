@@ -230,17 +230,21 @@ const formatMoney = (valor) => {
 };
 
 // 🚀 **Actualizar la función de OCR para guardar datos correctamente**
+
 export const OCRGPT = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: "No se ha proporcionado un documento PDF." });
         }
 
-        const pdfPath = req.file.path;
+        // 📌 Guardar temporalmente el buffer en un archivo en `/tmp/`
+        const tempFilePath = `/tmp/${Date.now()}-${req.file.originalname}`;
+        fs.writeFileSync(tempFilePath, req.file.buffer);
 
         // 📸 **Convertir PDF a imágenes**
-        const imagePaths = await convertirPDFaImagenes(pdfPath);
+        const imagePaths = await convertirPDFaImagenes(tempFilePath);
         if (imagePaths.length === 0) {
+            fs.unlinkSync(tempFilePath); // Eliminar archivo temporal
             return res.status(400).json({ message: "No se pudo extraer imágenes del documento." });
         }
 
@@ -270,6 +274,8 @@ export const OCRGPT = async (req, res) => {
             extractedData = extractJSONFromString(gptResponse.choices[0].message.content);
         } catch (error) {
             console.error("❌ Error extrayendo JSON:", error);
+            fs.unlinkSync(tempFilePath); // Eliminar archivo temporal
+            imagePaths.forEach(img => fs.unlinkSync(img)); // Eliminar imágenes temporales
             return res.status(400).json({ message: "Error al extraer datos del documento." });
         }
 
@@ -292,7 +298,7 @@ export const OCRGPT = async (req, res) => {
 
         if (existingRows.length > 0) {
             console.log("✅ La póliza ya existe en la base de datos. No se insertará nuevamente.");
-            fs.unlinkSync(pdfPath);
+            fs.unlinkSync(tempFilePath);
             imagePaths.forEach(img => fs.unlinkSync(img));
 
             return res.status(200).json({
@@ -305,16 +311,15 @@ export const OCRGPT = async (req, res) => {
         await pool.query(
             `INSERT INTO polizas_revisadas 
             (NoPoliza, RFC, NombreContratante, FechaVigenciaInicio, FechaVigenciaFin, 
-            PrimaTotal, Endoso, Direccion, CP, NumeroCelular, Correo, Ramo, ClaveAgente, FechaEmision, PrimaNeta DatosExtraidos) 
+            PrimaTotal, Endoso, Direccion, CP, NumeroCelular, Correo, Ramo, ClaveAgente, FechaEmision, PrimaNeta, DatosExtraidos) 
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-
             [
                 extractedData.NoPoliza,
                 extractedData.RFC,
                 extractedData.NombreContratante,
                 extractedData.FechaVigenciaInicio,
                 extractedData.FechaVigenciaFin,
-                extractedData.PrimaTotal, // 👈 Ya está validado
+                extractedData.PrimaTotal,
                 extractedData.Endoso,
                 extractedData.Direccion,
                 extractedData.CP,
@@ -323,13 +328,13 @@ export const OCRGPT = async (req, res) => {
                 extractedData.Ramo,
                 extractedData.ClaveAgente,
                 extractedData.FechaEmision,
-                extractedData.PrimaNeta,  // 👈 Ya está validado
+                extractedData.PrimaNeta,
                 JSON.stringify(extractedData)
             ]
         );
 
         // 🗑 **Eliminar archivos temporales**
-        fs.unlinkSync(pdfPath);
+        fs.unlinkSync(tempFilePath);
         imagePaths.forEach(img => fs.unlinkSync(img));
 
         res.status(200).json({
@@ -347,43 +352,53 @@ export const OCRGPT = async (req, res) => {
 };
 
 
+
+const writeFileAsync = promisify(fs.writeFile);
+
 export const procesarZIP = async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ message: "No se ha proporcionado un archivo ZIP." });
         }
 
-        const zipPath = req.file.path;
-        const extractPath = `uploads/${Date.now()}_extracted`;
+        // 📌 Guardar el buffer temporalmente en `/tmp/`
+        const tempZipPath = `/tmp/${Date.now()}-${req.file.originalname}`;
+        await writeFileAsync(tempZipPath, req.file.buffer);
 
-        // Crear carpeta temporal para los archivos extraídos
+        // 📌 Carpeta temporal para extraer archivos
+        const extractPath = `/tmp/${Date.now()}_extracted`;
         fs.mkdirSync(extractPath, { recursive: true });
 
-        // Extraer archivos del ZIP
-        await fs.createReadStream(zipPath)
+        // 📂 Extraer los archivos del ZIP
+        await fs.createReadStream(tempZipPath)
             .pipe(unzipper.Extract({ path: extractPath }))
             .promise();
 
-        // Leer los archivos extraídos
+        // 📄 Leer archivos extraídos
         const files = fs.readdirSync(extractPath);
         const pdfFiles = files.filter(file => file.endsWith(".pdf"));
 
         if (pdfFiles.length === 0) {
+            fs.unlinkSync(tempZipPath);
+            fs.rmSync(extractPath, { recursive: true, force: true });
             return res.status(400).json({ message: "No se encontraron archivos PDF en el ZIP." });
         }
 
-        // Procesar cada PDF de forma secuencial (evita saturar la API de OpenAI)
+        // 📑 Procesar cada PDF individualmente
         for (const pdfFile of pdfFiles) {
             const pdfPath = path.join(extractPath, pdfFile);
             console.log(`Procesando: ${pdfFile}`);
 
-            // Llamamos a la función OCRGPT para cada archivo
-            await OCRGPT({ file: { path: pdfPath } }, { status: () => ({ json: console.log }) });
+            // Leer el PDF en memoria
+            const pdfBuffer = fs.readFileSync(pdfPath);
+
+            // Llamar a la función OCRGPT para procesar el PDF en memoria
+            await OCRGPT({ file: { buffer: pdfBuffer, originalname: pdfFile } }, { status: () => ({ json: console.log }) });
         }
 
-        // Eliminar archivos temporales
+        // 🗑 Eliminar archivos temporales
         fs.rmSync(extractPath, { recursive: true, force: true });
-        fs.unlinkSync(zipPath);
+        fs.unlinkSync(tempZipPath);
 
         res.status(200).json({ message: "Procesamiento de ZIP completado" });
 
@@ -447,15 +462,12 @@ Ejemplo de Salida en JSON:
 // 📌 **Función para procesar el Excel y completar la información de las pólizas**
 export const procesarExcelPolizas = async (req, res) => {
     try {
-        // 📂 **Ubicación del archivo Excel**
-        const filePath = path.join("uploads", "PolizasSubir.xlsx");
-
-        // 📖 **Leer el archivo Excel**
-        if (!fs.existsSync(filePath)) {
-            return res.status(400).json({ message: "El archivo Excel no se encontró en /uploads/" });
+        if (!req.file) {
+            return res.status(400).json({ message: "No se ha proporcionado un archivo Excel." });
         }
 
-        const workbook = xlsx.readFile(filePath);
+        // 📖 **Leer el archivo Excel desde el buffer**
+        const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
         const sheetName = workbook.SheetNames[0]; // Tomar la primera hoja
         const worksheet = workbook.Sheets[sheetName];
         let data = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
@@ -493,20 +505,18 @@ export const procesarExcelPolizas = async (req, res) => {
             };
         });
 
-        // 📂 **Guardar el archivo actualizado en /uploads/procesados/**
-        const outputDir = path.join("uploads", "procesados");
-        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
-
-        const outputPath = path.join(outputDir, "PolizasSubir_Actualizado.xlsx");
+        // 📖 **Crear un nuevo archivo Excel en memoria**
         const newWorkbook = xlsx.utils.book_new();
         const newWorksheet = xlsx.utils.json_to_sheet(data);
         xlsx.utils.book_append_sheet(newWorkbook, newWorksheet, "PolizasActualizadas");
-        xlsx.writeFile(newWorkbook, outputPath);
 
-        res.status(200).json({
-            message: "Cruce de datos completado. Archivo actualizado guardado en /uploads/procesados/PolizasSubir_Actualizado.xlsx",
-            filePath: outputPath
-        });
+        // 📂 **Convertir el archivo actualizado a buffer**
+        const excelBuffer = xlsx.write(newWorkbook, { type: "buffer", bookType: "xlsx" });
+
+        res.setHeader("Content-Disposition", "attachment; filename=PolizasSubir_Actualizado.xlsx");
+        res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+
+        res.status(200).send(excelBuffer);
 
     } catch (error) {
         console.error("❌ Error al procesar el archivo Excel:", error);
