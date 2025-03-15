@@ -33,13 +33,17 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.7",
     "nodemon": "^3.1.4",
+    "openai": "^4.87.3",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
+    "pdf-poppler": "^0.2.1",
     "pdf2json": "^3.1.4",
     "pdfjs-dist": "^4.8.69",
     "playwright": "^1.50.1",
     "puppeteer": "^22.15.0",
+    "unzipper": "^0.12.3",
     "wse-commerce": "file:",
+    "xlsx": "^0.18.5",
     "xml2js": "^0.6.2"
   }
 }

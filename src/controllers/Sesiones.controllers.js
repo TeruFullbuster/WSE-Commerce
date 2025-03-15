@@ -1890,14 +1890,15 @@ async function sendDESK (token, data) {
                     "email": "aruiz@segurointeligente.mx",
                     "contactId": "212945000225587005",
                     "assigneeId": "",
-                    "description": `Fallo en cobro, hay poliza, pero no hay cobro ${data.iddocto}`,
+                    "description": `Fallo en cobro, hay poliza, pero no hay cobro idDocto: ${data.idDocto} Póliza/OT: ${data.Documento}
+                     URL: ${data.urlDocto} Tipo Tarjeta: ${data.tTarjeta} Banco: ${data.Banco} Fecha de ultima modificación: ${data.ultima_actualizacionMexico}`,
                     "status": "Nuevo",
                     "customFields": {
                         "Cobranza": "--Ninguna--",
                         "Aseguradora": data.aseguradoraCampana,
                         "ID_CRM": "",
                         "Medio_de_pago": "--Ninguna--",
-                        "Numero_de_poliza": "",
+                        "Numero_de_poliza": data.Documento,
                         "Origen_de_Contacto": "--Ninguna--",
                         "inciso": 0,
                         "Aplicar_forma_de_pago": "--Ninguna--",

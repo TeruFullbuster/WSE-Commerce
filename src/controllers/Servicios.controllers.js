@@ -1,5 +1,14 @@
 import axios from "axios";
 import puppeteer from "puppeteer";
+import OpenAI from 'openai';
+import fs from "fs";
+import path from "path";
+import pdfPoppler from "pdf-poppler";
+import dotenv from 'dotenv';
+import { pool } from '../db.js'
+import unzipper from "unzipper";
+import multer from "multer";
+import xlsx from 'xlsx';
 
 // Paso 1: Obtener el token de Google reCAPTCHA
 async function obtenerTokenReCAPTCHA() {
@@ -137,5 +146,373 @@ const consultarRepuve = async (placa) => {
     }
 };
 
-// 🔥 **Ejemplo de Uso**
-consultarRepuve("LST567B").then(data => console.log(data));
+
+// Configuración de OpenAI
+const openai = new OpenAI({
+    apiKey: process.env.OPENAI_API_KEY,
+});
+
+// 🛠 **Función para convertir PDF en imágenes**
+async function convertirPDFaImagenes(pdfPath) {
+    try {
+        const outputDir = path.dirname(pdfPath);
+        const outputPath = path.join(outputDir, "pagina");
+
+        const opts = {
+            format: "jpeg",
+            out_dir: outputDir,
+            out_prefix: "pagina",
+            scale: 1024 // Escalar a un tamaño adecuado
+        };
+
+        await pdfPoppler.convert(pdfPath, opts);
+        console.log("✅ PDF convertido a imágenes");
+
+        // Obtener las imágenes generadas
+        const imageFiles = fs.readdirSync(outputDir)
+            .filter(file => file.startsWith("pagina") && file.endsWith(".jpg"))
+            .map(file => path.join(outputDir, file));
+
+        return imageFiles;
+    } catch (error) {
+        console.error("❌ Error al convertir PDF en imágenes:", error);
+        throw new Error("Error al procesar el PDF");
+    }
+}
+// 📌 **Función para convertir fechas con mes en texto a formato `YYYY-MM-DD HH:MM:SS`**
+function formatFecha(fecha) {
+    if (!fecha) return null; // Si no hay fecha, devolver NULL
+    
+    // Diccionario para convertir meses de texto a número
+    const meses = {
+        "ene": "01", "feb": "02", "mar": "03", "abr": "04", "may": "05", "jun": "06",
+        "jul": "07", "ago": "08", "sep": "09", "oct": "10", "nov": "11", "dic": "12"
+    };
+
+    // Separar la fecha en partes
+    const parts = fecha.toLowerCase().split(/[-/\s]/); // Separar por "-", "/", o espacio
+
+    if (parts.length === 3) {
+        let [dia, mes, año] = parts;
+
+        // Convertir mes de texto a número
+        mes = meses[mes] || mes; // Si es texto, lo convierte; si ya es número, lo deja igual
+
+        // Validar que los valores sean numéricos antes de formatear
+        if (!isNaN(dia) && !isNaN(mes) && !isNaN(año)) {
+            return `${año}-${mes}-${dia} 00:00:00`; // Formato `YYYY-MM-DD HH:MM:SS`
+        }
+    }
+
+    return null; // Si la conversión falla, devolver NULL
+}
+// 📌 **Función para extraer JSON de un string con texto adicional**
+function extractJSONFromString(responseText) {
+    try {
+        const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
+        if (jsonMatch && jsonMatch[1]) {
+            return JSON.parse(jsonMatch[1].trim()); // Convertir a JSON
+        } else {
+            throw new Error("No se encontró JSON válido en la respuesta.");
+        }
+    } catch (error) {
+        console.error("❌ Error al extraer JSON:", error);
+        throw new Error("Formato de respuesta incorrecto.");
+    }
+}
+
+// 📌 **Función para convertir PrimaTotal a un número válido**
+const formatMoney = (valor) => {
+    if (!valor || typeof valor !== "string") return null; // Si está vacío, devolver NULL
+    let cleanValue = valor.replace(/[^0-9.]/g, ""); // Eliminar comas y caracteres no numéricos
+    let parsedValue = parseFloat(cleanValue); // Convertir a número
+    return isNaN(parsedValue) ? null : parsedValue; // Si no es un número válido, devolver NULL
+};
+
+// 🚀 **Actualizar la función de OCR para guardar datos correctamente**
+export const OCRGPT = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No se ha proporcionado un documento PDF." });
+        }
+
+        const pdfPath = req.file.path;
+
+        // 📸 **Convertir PDF a imágenes**
+        const imagePaths = await convertirPDFaImagenes(pdfPath);
+        if (imagePaths.length === 0) {
+            return res.status(400).json({ message: "No se pudo extraer imágenes del documento." });
+        }
+
+        // 🧠 **Llamar a OpenAI con las imágenes**
+        const gptResponse = await openai.chat.completions.create({
+            model: "gpt-4-turbo",
+            messages: [
+                { role: "system", content: "Eres un sistema de OCR avanzado. Extrae los datos del documento." },
+                { role: "user", content: PromptOCR },
+                ...imagePaths.map(imagePath => ({
+                    role: "user",
+                    content: [
+                        { type: "text", text: "Aquí está la imagen del documento a procesar:" },
+                        { type: "image_url", image_url: { url: `data:image/jpeg;base64,${fs.readFileSync(imagePath, "base64")}` } }
+                    ]
+                }))
+            ],
+            max_tokens: 1000
+        });
+
+        console.log(gptResponse);
+        console.log(gptResponse.choices[0].message.content);
+
+        // 🏷 **Extraer datos del JSON de respuesta**
+        let extractedData;
+        try {
+            extractedData = extractJSONFromString(gptResponse.choices[0].message.content);
+        } catch (error) {
+            console.error("❌ Error extrayendo JSON:", error);
+            return res.status(400).json({ message: "Error al extraer datos del documento." });
+        }
+
+        console.log(extractedData);
+
+        // 🔄 **Convertir fechas al formato correcto**
+        extractedData.FechaVigenciaInicio = formatFecha(extractedData.FechaVigenciaInicio);
+        extractedData.FechaVigenciaFin = formatFecha(extractedData.FechaVigenciaFin);
+        extractedData.FechaEmision = formatFecha(extractedData.FechaEmision);
+
+        // 💰 **Convertir PrimaTotal a número válido**
+        extractedData.PrimaTotal = formatMoney(extractedData.PrimaTotal);
+        extractedData.PrimaNeta = formatMoney(extractedData.PrimaNeta);
+
+        // 🔍 **Verificar si la póliza ya existe en la base de datos**
+        const [existingRows] = await pool.query(
+            "SELECT * FROM polizas_revisadas WHERE NoPoliza = ? LIMIT 1",
+            [extractedData.NoPoliza]
+        );
+
+        if (existingRows.length > 0) {
+            console.log("✅ La póliza ya existe en la base de datos. No se insertará nuevamente.");
+            fs.unlinkSync(pdfPath);
+            imagePaths.forEach(img => fs.unlinkSync(img));
+
+            return res.status(200).json({
+                message: "La póliza ya ha sido procesada previamente.",
+                datosPrevios: existingRows[0]
+            });
+        }
+
+        // 📊 **Insertar en la base de datos si la póliza no existe**
+        await pool.query(
+            `INSERT INTO polizas_revisadas 
+            (NoPoliza, RFC, NombreContratante, FechaVigenciaInicio, FechaVigenciaFin, 
+            PrimaTotal, Endoso, Direccion, CP, NumeroCelular, Correo, Ramo, ClaveAgente, FechaEmision, PrimaNeta DatosExtraidos) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+
+            [
+                extractedData.NoPoliza,
+                extractedData.RFC,
+                extractedData.NombreContratante,
+                extractedData.FechaVigenciaInicio,
+                extractedData.FechaVigenciaFin,
+                extractedData.PrimaTotal, // 👈 Ya está validado
+                extractedData.Endoso,
+                extractedData.Direccion,
+                extractedData.CP,
+                extractedData.NumeroCelular,
+                extractedData.Correo,
+                extractedData.Ramo,
+                extractedData.ClaveAgente,
+                extractedData.FechaEmision,
+                extractedData.PrimaNeta,  // 👈 Ya está validado
+                JSON.stringify(extractedData)
+            ]
+        );
+
+        // 🗑 **Eliminar archivos temporales**
+        fs.unlinkSync(pdfPath);
+        imagePaths.forEach(img => fs.unlinkSync(img));
+
+        res.status(200).json({
+            message: "Datos extraídos y guardados correctamente",
+            datos: extractedData
+        });
+
+    } catch (error) {
+        console.error("❌ Error en el procesamiento:", error);
+        res.status(500).json({
+            message: "Error al procesar la póliza",
+            error: error.message
+        });
+    }
+};
+
+
+export const procesarZIP = async (req, res) => {
+    try {
+        if (!req.file) {
+            return res.status(400).json({ message: "No se ha proporcionado un archivo ZIP." });
+        }
+
+        const zipPath = req.file.path;
+        const extractPath = `uploads/${Date.now()}_extracted`;
+
+        // Crear carpeta temporal para los archivos extraídos
+        fs.mkdirSync(extractPath, { recursive: true });
+
+        // Extraer archivos del ZIP
+        await fs.createReadStream(zipPath)
+            .pipe(unzipper.Extract({ path: extractPath }))
+            .promise();
+
+        // Leer los archivos extraídos
+        const files = fs.readdirSync(extractPath);
+        const pdfFiles = files.filter(file => file.endsWith(".pdf"));
+
+        if (pdfFiles.length === 0) {
+            return res.status(400).json({ message: "No se encontraron archivos PDF en el ZIP." });
+        }
+
+        // Procesar cada PDF de forma secuencial (evita saturar la API de OpenAI)
+        for (const pdfFile of pdfFiles) {
+            const pdfPath = path.join(extractPath, pdfFile);
+            console.log(`Procesando: ${pdfFile}`);
+
+            // Llamamos a la función OCRGPT para cada archivo
+            await OCRGPT({ file: { path: pdfPath } }, { status: () => ({ json: console.log }) });
+        }
+
+        // Eliminar archivos temporales
+        fs.rmSync(extractPath, { recursive: true, force: true });
+        fs.unlinkSync(zipPath);
+
+        res.status(200).json({ message: "Procesamiento de ZIP completado" });
+
+    } catch (error) {
+        console.error("❌ Error procesando ZIP:", error);
+        res.status(500).json({ message: "Error al procesar el ZIP", error: error.message });
+    }
+};
+
+// 🔹 **Prompt de OCR** (instrucciones para GPT)
+const PromptOCR = `
+Eres un sistema de OCR avanzado diseñado para analizar documentos escaneados de pólizas de seguro y extraer información estructurada en formato JSON. 
+Tu tarea es escanear el documento proporcionado y recuperar los siguientes campos clave. Dado que hay múltiples formatos de documentos, debes ser flexible y adaptarte a distintas estructuras para identificar los datos correctos.
+
+Instrucciones Generales:
+- Busca cada campo en diferentes ubicaciones del documento, ya que la estructura puede variar.
+- Si un campo no está presente, devuélvelo como una cadena vacía "" en el JSON.
+- Extrae correctamente los valores sin caracteres adicionales como saltos de línea, espacios innecesarios o caracteres especiales.
+- Diferencia correctamente entre las fechas de inicio y fin de vigencia.
+- Detecta si el documento corresponde a una póliza o un endoso (por términos como "Endoso" o "Modificación").
+- En caso de que haya múltiples valores en una sección, selecciona el más relevante o con mayor claridad.
+- Ignora información irrelevante que no pertenezca a los campos solicitados.
+
+Campos a Extraer y Consideraciones:
+- **NombreContratante**: Nombre de la empresa o persona que contrató la póliza.
+- **NoPoliza**: Número de póliza del documento.
+- **FechaVigenciaInicio y FechaVigenciaFin**: Buscar expresiones como "Inicio de Vigencia" y "Fin de Vigencia".
+- **PrimaTotal**: Monto total de la prima del seguro.
+- **Endoso**: Indicar si el documento es un endoso o una póliza.
+- **Direccion**: Dirección del contratante.
+- **CP**: Código postal de la dirección.
+- **NumeroCelular**: Número de contacto del asegurado o contratante.
+- **Correo**: Correo electrónico del asegurado o contratante.
+- **Ramo**: Tipo de seguro contratado.
+- **RFC**: Puede ser Fisica o Moral, con homoclave o sin ella.
+- **Clave Agente o Nro Agente o No. Agente o Agente**: Puede ser un número de agente o clave de identificación.
+- **Fecha de Emision o Expedición** : Fecha en la que se emitió la póliza.
+- **Prima Neta** : Monto de la prima neta.
+
+Ejemplo de Salida en JSON:
+
+{
+  "NombreContratante": "OSCAR ALBERTO REYNAL BAEZA",
+  "NoPoliza": "0065709A",
+  "RFC" : "RUJA960807TM2",
+  "FechaVigenciaInicio": "12/01/2012",
+  "FechaVigenciaFin": "24/02/2025",
+  "FechaEmision": "24/02/2025",
+  "PrimaTotal": "12,441.67",
+  "Prima Neta": "12,441.67",
+  "Endoso": "No",
+  "Direccion": "AV EL RIEGO AND 57 NUM 10 VILLA COAPA, TLALPAN, DISTRITO FEDERAL",
+  "CP": "14390",
+  "NumeroCelular": "",
+  "Correo": "",
+  "Ramo": "Vida",
+  "ClaveAgente": "123456"
+}
+`;
+
+// 📌 **Función para procesar el Excel y completar la información de las pólizas**
+export const procesarExcelPolizas = async (req, res) => {
+    try {
+        // 📂 **Ubicación del archivo Excel**
+        const filePath = path.join("uploads", "PolizasSubir.xlsx");
+
+        // 📖 **Leer el archivo Excel**
+        if (!fs.existsSync(filePath)) {
+            return res.status(400).json({ message: "El archivo Excel no se encontró en /uploads/" });
+        }
+
+        const workbook = xlsx.readFile(filePath);
+        const sheetName = workbook.SheetNames[0]; // Tomar la primera hoja
+        const worksheet = workbook.Sheets[sheetName];
+        let data = xlsx.utils.sheet_to_json(worksheet, { defval: "" });
+
+        if (data.length === 0) {
+            return res.status(400).json({ message: "El archivo Excel está vacío." });
+        }
+
+        // 🛠 **Verificar si la columna 'NoPoliza' existe en el Excel**
+        if (!data[0].NoPoliza) {
+            return res.status(400).json({ message: "El archivo Excel no contiene una columna 'NoPoliza'." });
+        }
+
+        // 🔍 **Obtener todas las pólizas de la base de datos**
+        const [polizasDB] = await pool.query("SELECT * FROM polizas_revisadas");
+        const polizasMap = new Map(polizasDB.map(row => [row.NoPoliza, row])); // Convertir a Map para búsqueda rápida
+
+        // 📝 **Lista de columnas esperadas**
+        const columnasEsperadas = [
+            "NoPoliza", "RFC", "NombreContratante", "FechaVigenciaInicio", "FechaVigenciaFin",
+            "PrimaTotal", "Endoso", "Direccion", "CP", "NumeroCelular", "Correo", "Ramo", "ClaveAgente"
+        ];
+
+        // 🔄 **Cruzar datos y completar la información**
+        data = data.map(row => {
+            const polizaInfo = polizasMap.get(row.NoPoliza) || {}; // Si no está en la base, dejamos un objeto vacío
+
+            return {
+                NoPoliza: row.NoPoliza, // Siempre incluir el número de póliza original
+                EnBase: polizaInfo.NoPoliza ? "X" : "", // Marcar con "X" si está en la base
+                ...columnasEsperadas.reduce((acc, columna) => {
+                    acc[columna] = polizaInfo[columna] || row[columna] || ""; // Si no está en base, mantener el valor del Excel o vacío
+                    return acc;
+                }, {})
+            };
+        });
+
+        // 📂 **Guardar el archivo actualizado en /uploads/procesados/**
+        const outputDir = path.join("uploads", "procesados");
+        if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir, { recursive: true });
+
+        const outputPath = path.join(outputDir, "PolizasSubir_Actualizado.xlsx");
+        const newWorkbook = xlsx.utils.book_new();
+        const newWorksheet = xlsx.utils.json_to_sheet(data);
+        xlsx.utils.book_append_sheet(newWorkbook, newWorksheet, "PolizasActualizadas");
+        xlsx.writeFile(newWorkbook, outputPath);
+
+        res.status(200).json({
+            message: "Cruce de datos completado. Archivo actualizado guardado en /uploads/procesados/PolizasSubir_Actualizado.xlsx",
+            filePath: outputPath
+        });
+
+    } catch (error) {
+        console.error("❌ Error al procesar el archivo Excel:", error);
+        res.status(500).json({
+            message: "Error al procesar el archivo Excel",
+            error: error.message
+        });
+    }
+};
