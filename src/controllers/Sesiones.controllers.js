@@ -1880,7 +1880,7 @@ async function sendDESK (token, data) {
                     "category": "E-COMMERCE",
                     "subCategory": "E-COMMERCE",
                     "statusType": "Open",
-                    "subject": "Póliza sin cobro - E-commerce",
+                    "subject": `Póliza sin cobro - E-commerce - ${data.aseguradoraCampana}`,
                     "departmentId": "212945000303532029",
                     "channel": "WS",
                     "resolution": "Urgente",
@@ -1890,8 +1890,7 @@ async function sendDESK (token, data) {
                     "email": "aruiz@segurointeligente.mx",
                     "contactId": "212945000225587005",
                     "assigneeId": "",
-                    "description": `Fallo en cobro, hay poliza, pero no hay cobro idDocto: ${data.idDocto} Póliza/OT: ${data.Documento}
-                     URL: ${data.urlDocto} Tipo Tarjeta: ${data.tTarjeta} Banco: ${data.Banco} Fecha de ultima modificación: ${data.ultima_actualizacionMexico}`,
+                    "description": `Fallo en cobro, hay poliza, pero no hay cobro idDocto: ${data.idDocto} Póliza/OT: ${data.Documento} URL: ${data.urlDocto} Tipo Tarjeta: ${data.tTarjeta} Banco: ${data.Banco} Fecha de ultima modificación: ${data.ultima_actualizacionMexico}`,
                     "status": "Nuevo",
                     "customFields": {
                         "Cobranza": "--Ninguna--",
@@ -1940,6 +1939,7 @@ async function sendDESK (token, data) {
         }
 
         const data = await response.json();
+        console.log(data)
         return { success: true, data };
         
     } catch (error) {

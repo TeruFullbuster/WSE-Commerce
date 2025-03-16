@@ -4,7 +4,6 @@ import axios from 'axios';
 import { parseStringPromise } from 'xml2js';
 import puppeteer from 'puppeteer';
 import xmlbuilder from 'xmlbuilder';
-import { chromium } from 'playwright';
 
 export const CotizarQualitas = async (req, res) => {
     const {
@@ -1805,7 +1804,7 @@ export const EspejoChubb = async (req, res) => {
 };
 
 export const BotcotizacionChubbExperto = async (req, res) => {
-    const  { days, vehicleTypeId, vehicleValue, hybrid, under21 }  = req.body;
+  /*   const  { days, vehicleTypeId, vehicleValue, hybrid, under21 }  = req.body;
 
     try {
         const browser = await chromium.launch({
@@ -1904,7 +1903,7 @@ export const BotcotizacionChubbExperto = async (req, res) => {
     } catch (error) {
         console.error('❌ Error en el scraping:', error);
         res.status(500).json({ message: 'Error en scraping', error: error.message });
-    }
+    } */
 };
 
 
