@@ -38,7 +38,7 @@ export const cotizaciones  = async (req, res) => {
                 "codigo": "300470"
             },
             "descuento": {
-                "codigo": "300470"
+                "codigo": ""
             }
         }
     })
