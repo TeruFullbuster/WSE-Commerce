@@ -1080,7 +1080,7 @@ export const GetCotID = async (req, res) => {
             let precioCotizacion = null;
             let descripcionCompleta = data.descripcion; // Inicialmente usando el valor de descripcion del body
             let idProdCR = data.idProdCR; // Valor inicial de idProdCR
-
+            console.log(data.idCotMAG)
             console.log(cotizacionId)
              // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
              let finalDescripcion = data.descripcion;
@@ -1101,10 +1101,11 @@ export const GetCotID = async (req, res) => {
                 const aseguradora = aseguradorasresponse.find(aseguradora => aseguradora.nombre === data.aseguradoracampana);
                 
                 // Verificar la aseguradora y asignar el idCIA
+                console.log(aseguradora)
                 if (aseguradora) {
                     idCIA = aseguradora.id;  // Asignamos el id de la aseguradora
                 } else {
-                    idCIA = "Aseguradora no encontrada";  // Si no se encuentra la aseguradora
+                    idCIA = CalculaidCIA(aseguradora)  // Si no se encuentra la aseguradora
                 }
 
                 // Actualizar la base de datos con el idCIA obtenido
@@ -1114,12 +1115,13 @@ export const GetCotID = async (req, res) => {
             console.log("IDCIA:", idCIA);
             // Si idCotMAG es inválido, obtener una nueva cotización
             if (cotizacionId === 1 || cotizacionId === "1" || cotizacionId === "null" || cotizacionId === null || cotizacionId === "") {
+                console.log(cotizacionId)
                 console.log("No se actualiza el idCotMAG, obteniendo nuevo idCotMAG");
                 const Token = await GetTokenMAG();
                 console.log("Token obtenido:", Token);
 
                 const Cotizacion = await GetCotiAseg2(Token.token, data, idCIA)
-
+                console.log(Cotizacion)
                 precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el valor de primaTotal a precioCotizacion
                 cotizacionId = Cotizacion.response.cotizacionInfo[0].id; // Asignar el nuevo idCotMAG de la cotización
                 precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el nuevo idCotMAG de la cotización
@@ -1261,6 +1263,27 @@ export const GetCotID = async (req, res) => {
         });
     }
 };
+
+function CalculaidCIA(aseguradora) {
+    switch (aseguradora) {
+        case "AXA":
+            return 7;
+        case "GNP":
+            return 11;
+        case "ANA":
+            return 5;
+        case "CHUBB":
+            return 8;
+        case "MAPFRE":
+            return 15;
+        case "QUALITAS":
+            return 18;
+        case "AFIRME":
+            return 28;
+        default:
+            return null; // Si no coincide, puedes devolver null o algún valor por defecto
+    }
+}
 
 /// Solicitudes Viraal
 
@@ -1948,3 +1971,230 @@ async function sendDESK (token, data) {
     }
 }
 
+export const GetCotChatbot = async (req, res) => {
+    const { number } = req.params;  // Extraer el id de la solicitud
+
+    // Obtener la cabecera Authorization y extraer el token
+    const authorization = req.headers.authorization;
+    
+    // Verificar si el token está presente en la cabecera
+    if (!authorization) {
+        return res.status(401).json({ message: 'Token no proporcionado' });
+    }
+
+    const token = authorization.split(' ')[1]; // Obtener el token después de 'Bearer'
+   
+    if (!token) {
+        return res.status(401).json({ message: 'Token no proporcionado' });
+    }
+
+    try {
+        console.log("Fetching prospect using provided idCot");
+
+        // Validar el token usando la función validateToken
+        const isValid = await validateToken(token);  // Usamos await para esperar la validación del token
+
+        if (!isValid) {
+            return res.status(401).json({ message: 'Token inválido o expirado' });
+        }
+
+        // Llamar al procedimiento almacenado pasando el original_id como parámetro
+        const [rows] = await pool.query('CALL FetchProspectNumber(?)', [number]);
+ 
+         // Verificar si rows tiene datos y si el primer registro tiene información válida
+         if (rows.length === 0 || !rows[0][0]) {
+             return res.status(404).json({ message: "El Numero proporcionado no existe" });
+         }
+
+            const data = rows[0][0];  // Acceder al primer resultado del procedimiento
+            let cotizacionId = data.idCotMAG; // Valor inicial de idCotMAG
+            let precioCotizacion = null;
+            let descripcionCompleta = data.descripcion; // Inicialmente usando el valor de descripcion del body
+            let idProdCR = data.idProdCR; // Valor inicial de idProdCR
+            console.log(data.idCotMAG)
+            console.log(cotizacionId)
+            let originalId = data.id
+             // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
+             let finalDescripcion = data.descripcion;
+             let idCIA = data.idCIA;  // Aquí guardamos idCIA desde la base de datos al principio
+             console.log("IDCIA:", idCIA);
+             if (idCIA === null || idCIA === "null" || idCIA === "" || idCIA === 0 || idCIA === "0" || idCIA === " ") {
+                // Obtener el token y buscar la aseguradora para obtener el idCIA
+                const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
+                const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
+                
+                // Llamar a la API para obtener las aseguradoras
+                const aseguradorasgenerales = await GetAseg(token);
+                
+                // Parsear la respuesta y buscar la aseguradora
+                const aseguradorasresponse = JSON.parse(aseguradorasgenerales).response;
+                
+                // Buscar la aseguradora en la respuesta usando el nombre de la aseguradora
+                const aseguradora = aseguradorasresponse.find(aseguradora => aseguradora.nombre === data.aseguradoracampana);
+                
+                // Verificar la aseguradora y asignar el idCIA
+                console.log(aseguradora)
+                if (aseguradora) {
+                    idCIA = aseguradora.id;  // Asignamos el id de la aseguradora
+                } else {
+                    idCIA = CalculaidCIA(aseguradora)  // Si no se encuentra la aseguradora
+                }
+
+                // Actualizar la base de datos con el idCIA obtenido
+                await pool.query('UPDATE SesionesFantasma SET idCIA = ? WHERE id = ?', [idCIA, originalId]);
+
+            }
+            console.log("IDCIA:", idCIA);
+            // Si idCotMAG es inválido, obtener una nueva cotización
+            if (cotizacionId === 1 || cotizacionId === "1" || cotizacionId === "null" || cotizacionId === null || cotizacionId === "") {
+                console.log(cotizacionId)
+                console.log("No se actualiza el idCotMAG, obteniendo nuevo idCotMAG");
+                const Token = await GetTokenMAG();
+                console.log("Token obtenido:", Token);
+
+                const Cotizacion = await GetCotiAseg2(Token.token, data, idCIA)
+                console.log(Cotizacion)
+                precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el valor de primaTotal a precioCotizacion
+                cotizacionId = Cotizacion.response.cotizacionInfo[0].id; // Asignar el nuevo idCotMAG de la cotización
+                precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el nuevo idCotMAG de la cotización
+                finalDescripcion = Cotizacion.response.cotizacionInfo[0].descripcion; // Asignar el nuevo idCotMAG de la cotización
+
+                console.log("Nuevo idCotMAG:", cotizacionId);
+                // Actualizar la base de datos con el idCIA obtenido
+                await pool.query('UPDATE SesionesFantasma SET idCotMAG = ?, precio_cotizacion = ?, descripcion = ? WHERE id = ?', [cotizacionId, precioCotizacion, finalDescripcion, originalId]);
+
+            } else {
+                // Si idCotMAG es válido, simplemente asignamos el precio y descripción desde el body
+                precioCotizacion = precioCotizacion || 0; // Valor por defecto si no se obtiene un precio
+            }        
+
+            if (!data.descripcion && data.cevic) {
+                // Obtener el token y buscar la descripción a través de la API
+                const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
+                const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
+
+                // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
+                const descriptionResponse = await GetDescription(token, data.marca, data.modelo, data.submarca, data.aseguradora);
+    
+                const descriptions = JSON.parse(descriptionResponse).response;
+                // Iterar por las aseguradoras
+                for (const aseguradoraData of descriptions) {
+                    // Verificamos si la aseguradora coincide con la que tenemos
+                    if (aseguradoraData.aseguradora === data.aseguradora) {
+                        // Filtramos las descripciones que tengan el mismo 'cevic'
+                        const matchedDescription = aseguradoraData.descipciones.find(desc => desc.cevic === data.cevic);
+                        
+                        if (matchedDescription) {
+                            finalDescripcion = matchedDescription.descripcion;  // Asignamos la descripción correspondiente
+                            break;  // Si encontramos la descripción, no necesitamos seguir buscando
+                        }
+                    }
+                }
+
+                // Actualizar la base de datos con la descripción obtenida
+                await pool.query('UPDATE SesionesFantasma SET descripcion = ? WHERE id = ?', [finalDescripcion, originalId]);
+            }
+            console.log("IDCIA:", idCIA);
+
+            //Armamos datos para recotizacion
+            let Descriptiones = [];
+            if (data.isComparator === "1") {
+                console.log("Recotizando");
+                // Obtener el token y buscar la descripción a través de la API
+                const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
+                const tokenMAG = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
+
+                // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
+                const descriptionResponse = await GetDescription(tokenMAG, data.marca, data.modelo, data.submarca, data.aseguradora);
+
+                // Parsear la respuesta para acceder a las descripciones
+                const descriptions = JSON.parse(descriptionResponse).response;
+
+                // Filtrar las descripciones por aseguradora
+                const filteredDescriptions = descriptions.filter(aseguradoraData => aseguradoraData.aseguradora === data.aseguradora);
+                Descriptiones = filteredDescriptions;
+            }
+            console.log("idProdCR:", idProdCR);
+            console.log("idCotMAG:", cotizacionId);
+            if ( idProdCR === null || idProdCR === "null" || idProdCR === "" || idProdCR === 0 || idProdCR === "0" || idProdCR === " ") {
+                if(cotizacionId != null || cotizacionId != "null" || cotizacionId != "" || cotizacionId != 0 || cotizacionId != "0" || cotizacionId != " "){
+                    const Token = await GetTokenMAG();
+                    console.log("Token obtenido:", Token);
+                    const getIDProdCR = await GetInfoCotizacionID(Token.token, cotizacionId);
+                     console.log(getIDProdCR)
+                     console.log(getIDProdCR.response)
+                    idProdCR = getIDProdCR.response.idProdCR;
+                     // Actualizar la base de datos con el idCIA obtenido
+                await pool.query('UPDATE SesionesFantasma SET idProdCR = ? WHERE id = ?', [idProdCR, originalId]);
+                }else{
+                    console.log("idProdCR Existente, no se actualiza");
+                }
+                
+            }else{
+                console.log("No se actualiza el idProdCR, obteniendo nuevo idProdCR");
+            }
+            // Organizar los datos en diferentes secciones
+            const response = {
+                message: "OK",
+                Paso: "3",
+                id: originalId,
+                contacto: {
+                    nombre: data.nombre,
+                    primer_nombre: data.primer_nombre,
+                    segundo_nombre: data.segundo_nombre,
+                    apellido_paterno: data.apellido_paterno,
+                    apellido_materno: data.apellido_materno,
+                    genero: data.genero,
+                    telefono: data.telefono,
+                    correo: data.correo,
+                    edad: data.edad ? new Date(data.edad).toLocaleDateString() : null,
+                    rfc: data.rfc,
+                },
+                vehiculo: {
+                    marca: data.marca,
+                    modelo: data.modelo,
+                    submarca: data.submarca,
+                    cevic: data.cevic,
+                    descripcion: finalDescripcion,  // Aquí usamos la descripcion final que puede ser obtenida o no desde la API
+                    Prima_Total: data.precio_cotizacion,
+                    placa: data.placa,
+                    num_motor: data.num_motor,
+                    Cotizacion_ID: cotizacionId
+                },
+                Aseguradora:{
+                    Aseguradora: data.aseguradoracampana,
+                    idCia: idCIA,
+                    idProdCR: idProdCR,
+                    isComparator: data.isComparator,
+                    Grupo: data.idGrupo,
+                    Versiones: Descriptiones
+                },
+                domicilio: {
+                    codigo_postal: data.codigo_postal,
+                    estado_residencia: data.estado_residencia,
+                    municipio_residencia: data.municipio_residencia,
+                    colonia_residencia: data.colonia_residencia,
+                    calle_residencia: data.calle_residencia,
+                    numero_ext_residencia: data.numero_ext_residencia,
+                    numero_int_residencia: data.numero_int_residencia,
+                },
+                adicional: {                    
+                    comentario: data.Comentario,
+                    gclid: data.gclid,
+                    utm: data.utm,
+                    creacionMexico: data.creacionMexico ? new Date(data.creacionMexico).toLocaleString() : null,
+                    ultima_actualizacionMexico: data.ultima_actualizacionMexico ? new Date(data.ultima_actualizacionMexico).toLocaleString() : null,
+                },
+                urlEcommerce: "https://ecommerce.segurointeligente.mx/recotizacion/" + originalId || "",
+            };
+
+            res.json(response);
+    
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({
+            message: "Error",
+            error: error.message
+        });
+    }
+};

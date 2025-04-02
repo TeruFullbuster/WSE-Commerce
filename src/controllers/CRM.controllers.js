@@ -324,10 +324,13 @@ export const NotificacionDiariaLeadsSimple = async (req, res) => {
     // Filtramos todos los leads del mes (históricos)
     const leadsHistoricos = leads.filter(lead => {
       const createdTime = moment(lead.Created_Time);
+      console.log(lead.smsmagic4__LeadIdCPY)
+      console.log(lead.Lead_Source)
       return createdTime.isBetween(startOfMonth, endOfMonth, null, '[]');
     });
-
     // Llenamos los datos históricos
+    
+
     historicoLeads.total = leadsHistoricos.length;
     historicoLeads.SEM = leadsHistoricos.filter(lead => lead.Lead_Source.includes("SEM")).length;
     historicoLeads.SEO = leadsHistoricos.filter(lead => lead.Lead_Source.includes("SEO")).length;

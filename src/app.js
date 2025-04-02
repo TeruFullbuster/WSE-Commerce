@@ -15,7 +15,7 @@ import Facebook from './routes/facebook.routes.js';
 import GastosGenerales from './routes/ControlGastos.routes.js';
 
 const app = express();
-const PORT = 3001;
+const PORT = 3002;
 
 chicle.randomBytes(16).toString('base64');
 console.log(chicle.randomBytes(16).toString('base64'));
