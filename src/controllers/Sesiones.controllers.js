@@ -1478,6 +1478,28 @@ export const GetDescription = (token, marca, modelo, submarca, aseguradora ) => 
         });
 };
 
+export const GetDescriptionHom = (token, marca, modelo, submarca ) => {
+    const myHeaders = new Headers();
+    myHeaders.append("Authorization", "Bearer " + token);
+    console.log(marca, modelo, submarca);
+    const requestOptions = {
+        method: "GET",
+        headers: myHeaders,
+        redirect: "follow"
+    };
+
+    return fetch(`https://apis.segurointeligente.mx/api/Catalogos/GetDescripcionesHom?marca=${marca}&Modelo=${modelo}&submarca=${submarca}`, requestOptions)
+        .then((response) => response.text())
+        .then((result) => {
+            // Puedes retornar el resultado si deseas usarlo en el .then() posterior
+            return result;
+        })
+        .catch((error) => {
+            console.error(error);
+            throw error;  // Lanza el error para manejarlo fuera de la función si es necesario
+        });
+};
+
 export const GetTokenMAG = () => {
     const myHeaders = new Headers();
     myHeaders.append("Content-Type", "application/json");
@@ -2014,11 +2036,16 @@ export const GetCotChatbot = async (req, res) => {
             console.log(data.idCotMAG)
             console.log(cotizacionId)
             let originalId = data.id
+            let PasoChatBot = 0
+            let descriptions = {}
+            let camposFaltantes = []; // Inicializar el array de campos faltantes
+            let urlEcommerce = ''
+            
              // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
              let finalDescripcion = data.descripcion;
              let idCIA = data.idCIA;  // Aquí guardamos idCIA desde la base de datos al principio
              console.log("IDCIA:", idCIA);
-             if (idCIA === null || idCIA === "null" || idCIA === "" || idCIA === 0 || idCIA === "0" || idCIA === " ") {
+             if ((idCIA === null || idCIA === "null" || idCIA === "" || idCIA === 0 || idCIA === "0" || idCIA === " ") && (data.aseguradoraCampana != "" || data.aseguradoraCampana != null || data.aseguradoraCampana != "null" || data.aseguradoraCampana != "COMPARADOR")) {
                 // Obtener el token y buscar la aseguradora para obtener el idCIA
                 const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
                 const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
@@ -2044,6 +2071,7 @@ export const GetCotChatbot = async (req, res) => {
                 await pool.query('UPDATE SesionesFantasma SET idCIA = ? WHERE id = ?', [idCIA, originalId]);
 
             }
+
             console.log("IDCIA:", idCIA);
             // Si idCotMAG es inválido, obtener una nueva cotización
             if (cotizacionId === 1 || cotizacionId === "1" || cotizacionId === "null" || cotizacionId === null || cotizacionId === "") {
@@ -2051,7 +2079,7 @@ export const GetCotChatbot = async (req, res) => {
                 console.log("No se actualiza el idCotMAG, obteniendo nuevo idCotMAG");
                 const Token = await GetTokenMAG();
                 console.log("Token obtenido:", Token);
-
+                
                 const Cotizacion = await GetCotiAseg2(Token.token, data, idCIA)
                 console.log(Cotizacion)
                 precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el valor de primaTotal a precioCotizacion
@@ -2067,53 +2095,47 @@ export const GetCotChatbot = async (req, res) => {
                 // Si idCotMAG es válido, simplemente asignamos el precio y descripción desde el body
                 precioCotizacion = precioCotizacion || 0; // Valor por defecto si no se obtiene un precio
             }        
-
-            if (!data.descripcion && data.cevic) {
+            console.log("DataDescripcion:" + data.descripcion + " Cevic:" + data.cevic)
+            if (!data.descripcion && !data.cevic) {
                 // Obtener el token y buscar la descripción a través de la API
                 const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
                 const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
-
+                console.log(token)
                 // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
-                const descriptionResponse = await GetDescription(token, data.marca, data.modelo, data.submarca, data.aseguradora);
+                const descriptionResponse = await GetDescriptionHom(token, data.marca, data.modelo, data.submarca);
+                console.log(descriptionResponse)
+                descriptions = JSON.parse(descriptionResponse).response;  
+                PasoChatBot = 1                                          
+            }else{
+                if (!data.descripcion && data.cevic) {
+                    // Obtener el token y buscar la descripción a través de la API
+                    const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
+                    const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
     
-                const descriptions = JSON.parse(descriptionResponse).response;
-                // Iterar por las aseguradoras
-                for (const aseguradoraData of descriptions) {
-                    // Verificamos si la aseguradora coincide con la que tenemos
-                    if (aseguradoraData.aseguradora === data.aseguradora) {
-                        // Filtramos las descripciones que tengan el mismo 'cevic'
-                        const matchedDescription = aseguradoraData.descipciones.find(desc => desc.cevic === data.cevic);
-                        
-                        if (matchedDescription) {
-                            finalDescripcion = matchedDescription.descripcion;  // Asignamos la descripción correspondiente
-                            break;  // Si encontramos la descripción, no necesitamos seguir buscando
+                    // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
+                    const descriptionResponse = await GetDescription(token, data.marca, data.modelo, data.submarca, data.aseguradora);
+        
+                    const descriptions = JSON.parse(descriptionResponse).response;
+                    // Iterar por las aseguradoras
+                    for (const aseguradoraData of descriptions) {
+                        // Verificamos si la aseguradora coincide con la que tenemos
+                        if (aseguradoraData.aseguradora === data.aseguradora) {
+                            // Filtramos las descripciones que tengan el mismo 'cevic'
+                            const matchedDescription = aseguradoraData.descipciones.find(desc => desc.cevic === data.cevic);
+                            
+                            if (matchedDescription) {
+                                descriptions = matchedDescription.descripcion;  // Asignamos la descripción correspondiente
+                                break;  // Si encontramos la descripción, no necesitamos seguir buscando
+                            }
                         }
                     }
+    
+                    // Actualizar la base de datos con la descripción obtenida
+                    await pool.query('UPDATE SesionesFantasma SET descripcion = ? WHERE id = ?', [descriptions, originalId]);
                 }
-
-                // Actualizar la base de datos con la descripción obtenida
-                await pool.query('UPDATE SesionesFantasma SET descripcion = ? WHERE id = ?', [finalDescripcion, originalId]);
             }
             console.log("IDCIA:", idCIA);
-
-            //Armamos datos para recotizacion
-            let Descriptiones = [];
-            if (data.isComparator === "1") {
-                console.log("Recotizando");
-                // Obtener el token y buscar la descripción a través de la API
-                const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
-                const tokenMAG = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
-
-                // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
-                const descriptionResponse = await GetDescription(tokenMAG, data.marca, data.modelo, data.submarca, data.aseguradora);
-
-                // Parsear la respuesta para acceder a las descripciones
-                const descriptions = JSON.parse(descriptionResponse).response;
-
-                // Filtrar las descripciones por aseguradora
-                const filteredDescriptions = descriptions.filter(aseguradoraData => aseguradoraData.aseguradora === data.aseguradora);
-                Descriptiones = filteredDescriptions;
-            }
+            
             console.log("idProdCR:", idProdCR);
             console.log("idCotMAG:", cotizacionId);
             if ( idProdCR === null || idProdCR === "null" || idProdCR === "" || idProdCR === 0 || idProdCR === "0" || idProdCR === " ") {
@@ -2133,10 +2155,33 @@ export const GetCotChatbot = async (req, res) => {
             }else{
                 console.log("No se actualiza el idProdCR, obteniendo nuevo idProdCR");
             }
+            // Verificar campos faltantes
+            if (!data.nombre) camposFaltantes.push('Nombre');
+            if (!data.apellido_paterno) camposFaltantes.push('Apellido');
+            if (!data.genero) camposFaltantes.push('Género');
+            if (!data.edad) camposFaltantes.push('Edad');
+            if (!data.correo) camposFaltantes.push('Correo');
+            if (!data.telefono) camposFaltantes.push('Celular');
+            if (!data.codigo_postal) camposFaltantes.push('Código Postal');
+            if (!data.marca) camposFaltantes.push('Marca del vehículo');
+            if (!data.modelo) camposFaltantes.push('Modelo');
+            if (!data.submarca) camposFaltantes.push('Submarca');
+            if (!data.descripcion) camposFaltantes.push('Descripción del vehículo');
+            if (!data.cevic) camposFaltantes.push('Cevic del vehículo');
+            if (!data.aseguradora) camposFaltantes.push('Aseguradora');
+            if (!data.idCIA) camposFaltantes.push('IDCia');
+            if (!data.idCotMAG) camposFaltantes.push('IDCotMAG');
+            if (!data.idProdCR) camposFaltantes.push('IDProdCR');
+            if (!data.precio_cotizacion) camposFaltantes.push('Precio de cotización');                 
+
+            if(camposFaltantes.length <= 0) {
+                console.log("Campos faltantes:", camposFaltantes);
+                urlEcommerce = 'https://segurointeligente.mx/ecommerce/#/?Session=' + data.id;
+            }    
             // Organizar los datos en diferentes secciones
             const response = {
                 message: "OK",
-                Paso: "3",
+                Paso: PasoChatBot,
                 id: originalId,
                 contacto: {
                     nombre: data.nombre,
@@ -2167,7 +2212,7 @@ export const GetCotChatbot = async (req, res) => {
                     idProdCR: idProdCR,
                     isComparator: data.isComparator,
                     Grupo: data.idGrupo,
-                    Versiones: Descriptiones
+                    Versiones: descriptions
                 },
                 domicilio: {
                     codigo_postal: data.codigo_postal,
@@ -2185,7 +2230,10 @@ export const GetCotChatbot = async (req, res) => {
                     creacionMexico: data.creacionMexico ? new Date(data.creacionMexico).toLocaleString() : null,
                     ultima_actualizacionMexico: data.ultima_actualizacionMexico ? new Date(data.ultima_actualizacionMexico).toLocaleString() : null,
                 },
-                urlEcommerce: "https://ecommerce.segurointeligente.mx/recotizacion/" + originalId || "",
+                ECommerce:{
+                    CamposFaltantes: camposFaltantes,
+                    urlEcommerce: urlEcommerce
+                }                
             };
 
             res.json(response);
