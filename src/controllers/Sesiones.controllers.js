@@ -1795,6 +1795,14 @@ const getOriginalIdFromHash = async (hash) => {
     return rows[0].original_id;  // Devolver el ID original
 };
 
+const gethashfromoriginalid = async (original_id) => {
+    const [rows] = await pool.query('SELECT hashed_id FROM HashToID WHERE original_id = ?', [original_id]);
+    if (rows.length === 0) {
+        throw new Error('Hash no válido o no encontrado');
+    }
+    return rows[0].hashed_id;  // Devolver el ID original
+};
+
 
 async function sendCRM(token, prospect) {
     console.log(prospect)
@@ -2044,7 +2052,7 @@ export const GetCotChatbot = async (req, res) => {
              // Si el campo descripcion está vacío y cvic tiene valor, obtenemos la descripción desde la API
              let finalDescripcion = data.descripcion;
              let idCIA = data.idCIA;  // Aquí guardamos idCIA desde la base de datos al principio
-             console.log("IDCIA:", idCIA);
+
              if ((idCIA === null || idCIA === "null" || idCIA === "" || idCIA === 0 || idCIA === "0" || idCIA === " ") && (data.aseguradoraCampana != "" || data.aseguradoraCampana != null || data.aseguradoraCampana != "null" || data.aseguradoraCampana != "COMPARADOR")) {
                 // Obtener el token y buscar la aseguradora para obtener el idCIA
                 const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
@@ -2072,7 +2080,7 @@ export const GetCotChatbot = async (req, res) => {
 
             }
 
-            console.log("IDCIA:", idCIA);
+           
             // Si idCotMAG es inválido, obtener una nueva cotización
             if (cotizacionId === 1 || cotizacionId === "1" || cotizacionId === "null" || cotizacionId === null || cotizacionId === "") {
                 console.log(cotizacionId)
@@ -2100,10 +2108,10 @@ export const GetCotChatbot = async (req, res) => {
                 // Obtener el token y buscar la descripción a través de la API
                 const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
                 const token = tokenResponse.token;  // Asumiendo que el token está en la propiedad 'token'
-                console.log(token)
+
                 // Consultar la descripción utilizando la marca, modelo, submarca y aseguradora
                 const descriptionResponse = await GetDescriptionHom(token, data.marca, data.modelo, data.submarca);
-                console.log(descriptionResponse)
+
                 descriptions = JSON.parse(descriptionResponse).response;  
                 PasoChatBot = 1                                          
             }else{
@@ -2135,9 +2143,9 @@ export const GetCotChatbot = async (req, res) => {
                 }
             }
             console.log("IDCIA:", idCIA);
-            
             console.log("idProdCR:", idProdCR);
             console.log("idCotMAG:", cotizacionId);
+
             if ( idProdCR === null || idProdCR === "null" || idProdCR === "" || idProdCR === 0 || idProdCR === "0" || idProdCR === " ") {
                 if(cotizacionId != null || cotizacionId != "null" || cotizacionId != "" || cotizacionId != 0 || cotizacionId != "0" || cotizacionId != " "){
                     const Token = await GetTokenMAG();
@@ -2155,12 +2163,12 @@ export const GetCotChatbot = async (req, res) => {
             }else{
                 console.log("No se actualiza el idProdCR, obteniendo nuevo idProdCR");
             }
-            console.log(data.genero)
-            
+            console.log(!data.genero)
+
             // Verificar campos faltantes
             if (!data.nombre) camposFaltantes.push('Nombre');
             if (!data.apellido_paterno) camposFaltantes.push('Apellido');
-            if (!data.genero) camposFaltantes.push('Género');
+            if (data.genero == null) { camposFaltantes.push('Género'); }
             if (!data.edad) camposFaltantes.push('Edad');
             if (!data.correo) camposFaltantes.push('Correo');
             if (!data.telefono) camposFaltantes.push('Celular');
@@ -2178,7 +2186,9 @@ export const GetCotChatbot = async (req, res) => {
 
             if(camposFaltantes.length <= 0) {
                 console.log("Campos faltantes:", camposFaltantes);
-                urlEcommerce = 'https://segurointeligente.mx/ecommerce/#/?Session=' + data.id;
+                const HashID = await gethashfromoriginalid(originalId)
+                console.log("HashID:", HashID);
+                urlEcommerce = 'https://segurointeligente.mx/ecommerce/#/?Session=' + HashID;
             }    
             // Organizar los datos en diferentes secciones
             const response = {
@@ -2248,3 +2258,108 @@ export const GetCotChatbot = async (req, res) => {
         });
     }
 };
+
+export const UpdateNumber = async (req, res) => {
+    const { id } = req.params;  // Extraer el id de la solicitud (id normal)
+    const {
+        idCotMAG, idCia, aseguradora, idProdCR, cevic, descripcion,
+        precio_cotizacion, Cambios
+    } = req.body;  // Extraemos el body con los datos
+
+    try {
+        // Obtener el original_id a partir del idCotMAG (id en la URL)
+        const originalId = id;  // El id en la URL es el id normal para la búsqueda
+        if (!originalId) {
+            return res.status(404).json({ message: "ID no encontrado en la base de datos" });
+        }
+
+        // Si 'Cambios' es igual a 1, limpiar todos los campos y actualizarlos como null
+        if (Cambios === 1) {
+            // Aquí hacemos la actualización para limpiar los campos y ponerlos a null
+            const updateQueryClear = `
+                UPDATE SesionesFantasma 
+                SET 
+                    idCia = NULL, 
+                    aseguradora = NULL, 
+                    idProdCR = NULL, 
+                    cevic = NULL, 
+                    descripcion = NULL, 
+                    precio_cotizacion = NULL
+                WHERE id = ?`;
+
+            const [clearResult] = await pool.query(updateQueryClear, [originalId]);
+
+            if (clearResult.affectedRows === 0) {
+                return res.status(404).json({ message: "Prospecto no encontrado o no se pudieron limpiar los campos" });
+            }
+
+            return res.json({ message: "Campos limpiados correctamente" });
+        }
+
+        // Si 'Cambios' es igual a 0 o no está presente, actualizamos solo los campos con valores
+        let updatedData = {
+            idCotMAG, idCia, aseguradora, idProdCR, cevic, descripcion, precio_cotizacion
+        };
+
+        // Verificar si los campos obligatorios están presentes
+        const camposFaltantes = [];
+
+        if (updatedData.idCia === undefined || updatedData.idCia === 0) camposFaltantes.push('idCia');
+        if (updatedData.aseguradora === undefined || updatedData.aseguradora === '') camposFaltantes.push('aseguradora');
+        if (updatedData.idProdCR === undefined || updatedData.idProdCR === 0) camposFaltantes.push('idProdCR');
+        if (updatedData.cevic === undefined || updatedData.cevic === 0) camposFaltantes.push('cevic');
+        if (updatedData.descripcion === undefined || updatedData.descripcion === 0) camposFaltantes.push('descripcion');
+        if (updatedData.precio_cotizacion === undefined || updatedData.precio_cotizacion === 0) camposFaltantes.push('precio_cotizacion'); 
+
+        // Si hay campos faltantes, retornamos un mensaje
+        if (camposFaltantes.length > 0) {
+            return res.status(400).json({
+                message: "Campos obligatorios faltantes",
+                camposFaltantes
+            });
+        }
+
+        // Construimos la consulta de actualización
+        let updateQuery = `UPDATE SesionesFantasma SET `;
+        let updateValues = [];
+
+        // Solo actualizamos los campos que tienen valores (no null o 0)
+        for (const key in updatedData) {
+            if (updatedData[key] !== undefined && updatedData[key] !== 0 && updatedData[key] !== '') {
+                updateQuery += `${key} = ?, `;
+                updateValues.push(updatedData[key]);
+            }
+        }
+
+        // Eliminar la última coma y espacio
+        updateQuery = updateQuery.slice(0, -2); // Eliminar la coma final
+
+        updateQuery += ` WHERE id = ?`; // Usamos el idCotMAG para la búsqueda
+        updateValues.push(originalId); // El idCotMAG de la base de datos
+
+        // Ejecutar la consulta SQL para actualizar los datos
+        const [result] = await pool.query(updateQuery, updateValues);
+        const HashID = await gethashfromoriginalid(originalId)
+        console.log("HashID:", HashID);
+
+        // Verificamos si la actualización fue exitosa
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ 
+                message: "Prospecto no encontrado o sin cambios"});
+        }
+
+        res.json({ 
+            message: "Prospecto actualizado exitosamente",            
+            urlEcommerce : `https://segurointeligente.mx/e-commercer/#/?Sesion=` + HashID
+        });
+
+    } catch (error) {
+        console.error("❌ Error en el UPDATE:", error);
+        return res.status(500).json({
+            message: "Error interno en la actualización",
+            error: error.message
+        });
+    }
+};
+
+
