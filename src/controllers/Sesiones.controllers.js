@@ -2155,6 +2155,8 @@ export const GetCotChatbot = async (req, res) => {
             }else{
                 console.log("No se actualiza el idProdCR, obteniendo nuevo idProdCR");
             }
+            console.log(data.genero)
+            
             // Verificar campos faltantes
             if (!data.nombre) camposFaltantes.push('Nombre');
             if (!data.apellido_paterno) camposFaltantes.push('Apellido');
