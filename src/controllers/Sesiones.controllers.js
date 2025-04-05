@@ -1381,7 +1381,7 @@ async function createToken(userId, username) {
     const token = jwt.sign({ userId }, secretKey, { expiresIn });
 
     // Obtener la hora actual de México (zona horaria CST/CDT)
-    const expiresAt = moment().tz('America/Mexico_City').add(30, 'minutes').format('YYYY-MM-DD HH:mm:ss');  // Agregar 30 minutos y formatear como cadena
+    const expiresAt = moment().tz('America/Mexico_City').add(60, 'minutes').format('YYYY-MM-DD HH:mm:ss');  // Agregar 30 minutos y formatear como cadena
 
     // Guardar el token en la base de datos
     await pool.query('INSERT INTO tokens (token, expires_at, users) VALUES (?, ?, ?)', [token, expiresAt, username]);
