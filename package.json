@@ -23,6 +23,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
     "fs": "^0.0.1-security",
+    "fs-extra": "^11.3.0",
     "http": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
     "moment": "^2.30.1",
@@ -33,13 +34,20 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^6.9.7",
     "nodemon": "^3.1.4",
+    "openai": "^4.92.1",
     "pdf-lib": "^1.17.1",
     "pdf-parse": "^1.1.1",
+    "pdf-poppler": "^0.2.1",
+    "pdf2image": "^1.2.3",
     "pdf2json": "^3.1.4",
+    "pdf2pic": "^3.1.4",
     "pdfjs-dist": "^4.8.69",
     "playwright": "^1.50.1",
     "puppeteer": "^22.15.0",
+    "sharp": "^0.34.1",
+    "tesseract.js": "^6.0.1",
     "wse-commerce": "file:",
+    "xlsx": "^0.18.5",
     "xml2js": "^0.6.2"
   }
 }
