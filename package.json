@@ -22,7 +22,6 @@
     "decode-uri-component": "^0.4.1",
     "dotenv": "^16.4.5",
     "express": "^4.21.0",
-    "fs": "^0.0.1-security",
     "fs-extra": "^11.3.0",
     "http": "^0.0.1-security",
     "jsonwebtoken": "^9.0.2",
@@ -47,7 +46,6 @@
     "sharp": "^0.34.1",
     "tesseract.js": "^6.0.1",
     "wse-commerce": "file:",
-    "xlsx": "^0.18.5",
     "xml2js": "^0.6.2"
   }
 }
