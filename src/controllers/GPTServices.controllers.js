@@ -3,9 +3,11 @@ import pdfParse from "pdf-parse";
 
 import { pool } from "../db.js"; // Tu conexión a la base de datos
 
+import { OPENAI_API_KEY } from "../config.js"; // Asegúrate que esta ruta es la correcta
+
 // Configuración de OpenAI
 const openai = new OpenAI({
-    apiKey: process.env.OPENAI_API_KEY || "",
+    apiKey: OPENAI_API_KEY,
 });
 
 // 👉 Formatear fecha de texto tipo "12 ene 2024" a "2024-01-12 00:00:00"
@@ -366,4 +368,38 @@ Si el documento pertenece a la aseguradora **MAPFRE**, también deberás buscar 
 
 🔹 Si no hay ninguna clave MAPFRE visible, incluye "ClaveMAPFRE": "".
 }
+📌 Reglas Adicionales para GNP
+Si el documento pertenece a la aseguradora GNP, deberás buscar y extraer la descripción completa del vehículo, que aparece en la sección “VEHÍCULO ASEGURADO”, así como identificar la marca del vehículo.
+
+🔍 Este campo usualmente contiene una cadena con el siguiente formato:
+
+arduino
+Copiar
+Editar
+"CHEVROLET SPARK DOT G L4 1.2 STD"
+u otras variantes similares donde el primer término representa la marca.
+
+🔹 Para extraer esta información correctamente:
+
+Ubica el bloque o línea donde aparece el encabezado VEHÍCULO ASEGURADO.
+
+Localiza la línea que contiene la descripción completa del vehículo, generalmente después de las palabras Descripción y Serie.
+
+Guarda esa línea como valor del campo DescripcionGNP.
+
+Extrae la primera palabra de dicha línea (antes del primer espacio). Esa será la marca del vehículo.
+
+🔹 Ejemplo:
+
+Texto detectado:
+CHEVROLET SPARK DOT G L4 1.2 STD
+
+Resultado esperado en el JSON:
+
+"DescripcionGNP": "CHEVROLET SPARK DOT G L4 1.2 STD",
+"Marca": "CHEVROLET"
+🔹 Si no se encuentra la descripción, incluir:
+"DescripcionGNP": "",
+"Marca": "CHEVROLET"
+
 `;
