@@ -13,6 +13,7 @@ import cors from 'cors';
 import chicle from 'crypto';
 import Facebook from './routes/facebook.routes.js';
 import GastosGenerales from './routes/ControlGastos.routes.js';
+import GPT from './routes/GPTServices.routes.js';
 
 const app = express();
 const PORT = 3003;
@@ -46,6 +47,7 @@ app.use(Documentos)
 app.use(Servicios);
 app.use(Cotizadores);
 app.use(GastosGenerales);
+app.use(GPT);
 
 // Configuración del servidor para escuchar en el puerto
 app.listen(PORT, () => {
