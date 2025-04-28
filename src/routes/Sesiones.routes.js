@@ -4,7 +4,7 @@ import { updateProspectoEcommerce, POSTSesion , PutSesion, PutPass ,
     POSTFormulario, createProspecto, updateProspectoPaso1, updateProspectoPaso2, 
     updateProspectoPaso3, updateProspectoPaso4, RecuperaProspectos, TraemelosEcommerce,
     RecuperaProspectosEcommerce, GetCotID, GetToken, updateProspectoRecotiza, GetMSIxBanco,
-    UpdateDescCot, GetCotChatbot, UpdateNumber } from '../controllers/Sesiones.controllers.js'
+    UpdateDescCot, GetCotChatbot, UpdateNumber, SendMessageAutomatizado } from '../controllers/Sesiones.controllers.js'
 
 const router = Router()
 
@@ -43,6 +43,8 @@ router.get('/GetCotID/:id', GetCotID);
 router.get('/GetCotChatBot/:number', GetCotChatbot);
 
 router.put('/UpdateNumber/:id', UpdateNumber);
+
+router.get('/SendMassiveMessage/', SendMessageAutomatizado);
 
 router.get('/Catalogos/BancosxAseguradoraMSI/:idCIa', GetMSIxBanco);
 

@@ -2275,18 +2275,20 @@ export const UpdateNumber = async (req, res) => {
 
         // Si 'Cambios' es igual a 0 o no está presente, actualizamos solo los campos con valores
         let updatedData = {
-            idCotMAG, idCia, aseguradora, idProdCR, cevic, descripcion, precio_cotizacion
+            idCotMAG, idCia, aseguradora, idProdCR, cevic, descripcion, precio_cotizacion, aseguradoracampana: aseguradora
         };
 
         // Verificar si los campos obligatorios están presentes
         const camposFaltantes = [];
 
         if (updatedData.idCia === undefined || updatedData.idCia === 0) camposFaltantes.push('idCia');
-        if (updatedData.aseguradora === undefined || updatedData.aseguradora === '') camposFaltantes.push('aseguradora');
+        if (updatedData.aseguradora === undefined || updatedData.aseguradora === '') camposFaltantes.push('aseguradora', 'aseguradoraCampana');
+       
         if (updatedData.idProdCR === undefined || updatedData.idProdCR === 0) camposFaltantes.push('idProdCR');
         if (updatedData.cevic === undefined || updatedData.cevic === 0) camposFaltantes.push('cevic');
         if (updatedData.descripcion === undefined || updatedData.descripcion === 0) camposFaltantes.push('descripcion');
         if (updatedData.precio_cotizacion === undefined || updatedData.precio_cotizacion === 0) camposFaltantes.push('precio_cotizacion'); 
+        console.log(camposFaltantes)
 
         // Si hay campos faltantes, retornamos un mensaje
         if (camposFaltantes.length > 0) {
@@ -2307,6 +2309,7 @@ export const UpdateNumber = async (req, res) => {
                 updateValues.push(updatedData[key]);
             }
         }
+        console.log(updateQuery)    
 
         // Eliminar la última coma y espacio
         updateQuery = updateQuery.slice(0, -2); // Eliminar la coma final
@@ -2336,6 +2339,55 @@ export const UpdateNumber = async (req, res) => {
             message: "Error interno en la actualización",
             error: error.message
         });
+    }
+};
+
+
+export const SendMessageAutomatizado = async (req, res) => {
+    try {
+        const [rows] = await pool.query('CALL FetchProspectsSendWA()');
+
+        if (rows.length === 0 || !rows[0][0]) {
+            return res.status(200).json({ message: "No hay registros para enviar" });
+        }
+
+        const prospectos = rows[0]; // todos los prospectos
+
+        for (const prospecto of prospectos) {
+            const numero = prospecto.telefono;
+            const nombreCompleto = `${prospecto.nombre} ${prospecto.apellido_paterno}`;
+
+            if (!numero || !nombreCompleto) continue; // si falta número o nombre, brincamos
+
+            // Codificamos el nombre para que pueda ir en la URL
+            const nombreEncoded = encodeURIComponent(nombreCompleto);
+
+            const url = `http://switchyard.proxy.rlwy.net:41277/api/messages/send/${numero}/${nombreEncoded}`;
+
+            console.log("Enviando a:", url);
+
+            try {
+                const response = await fetch(url, { method: "GET" });
+                const result = await response.json();
+                console.log("Resultado de envío:", result);
+
+                if (result.success) {
+                    // Update a la base de datos para marcar que ya se envió
+                    await pool.query('UPDATE SesionesFantasma SET whatsapp = 1 WHERE id = ?', [prospecto.id]);
+                    console.log(`WhatsApp enviado y actualizado para ID: ${prospecto.id}`);
+                } else {
+                    console.error(`Error al enviar WhatsApp a ${numero}:`, result);
+                }
+            } catch (error) {
+                console.error(`Error en el envío del WhatsApp a ${numero}:`, error.message);
+            }
+        }
+
+        return res.status(200).json({ message: "Proceso de envío de WhatsApps finalizado." });
+
+    } catch (error) {
+        console.error("Error general:", error.message);
+        return res.status(500).json({ message: "Error en el proceso de envío de WhatsApp", error: error.message });
     }
 };
 
