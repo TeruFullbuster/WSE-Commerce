@@ -2080,30 +2080,7 @@ export const GetCotChatbot = async (req, res) => {
 
             }
 
-           
-            // Si idCotMAG es inválido, obtener una nueva cotización
-            if (cotizacionId === 1 || cotizacionId === "1" || cotizacionId === "null" || cotizacionId === null || cotizacionId === "") {
-                console.log(cotizacionId)
-                console.log("No se actualiza el idCotMAG, obteniendo nuevo idCotMAG");
-                const Token = await GetTokenMAG();
-                console.log("Token obtenido:", Token);
-                
-                const Cotizacion = await GetCotiAseg2(Token.token, data, idCIA)
-                console.log(Cotizacion)
-                precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el valor de primaTotal a precioCotizacion
-                cotizacionId = Cotizacion.response.cotizacionInfo[0].id; // Asignar el nuevo idCotMAG de la cotización
-                precioCotizacion = Cotizacion.response.cotizacionInfo[0].primaTotal; // Asignar el nuevo idCotMAG de la cotización
-                finalDescripcion = Cotizacion.response.cotizacionInfo[0].descripcion; // Asignar el nuevo idCotMAG de la cotización
-
-                console.log("Nuevo idCotMAG:", cotizacionId);
-                // Actualizar la base de datos con el idCIA obtenido
-                await pool.query('UPDATE SesionesFantasma SET idCotMAG = ?, precio_cotizacion = ?, descripcion = ? WHERE id = ?', [cotizacionId, precioCotizacion, finalDescripcion, originalId]);
-
-            } else {
-                // Si idCotMAG es válido, simplemente asignamos el precio y descripción desde el body
-                precioCotizacion = precioCotizacion || 0; // Valor por defecto si no se obtiene un precio
-            }        
-            console.log("DataDescripcion:" + data.descripcion + " Cevic:" + data.cevic)
+    
             if (!data.descripcion && !data.cevic) {
                 // Obtener el token y buscar la descripción a través de la API
                 const tokenResponse = await GetTokenMAG();  // Llamada para obtener el token
@@ -2146,7 +2123,7 @@ export const GetCotChatbot = async (req, res) => {
             console.log("idProdCR:", idProdCR);
             console.log("idCotMAG:", cotizacionId);
 
-            if ( idProdCR === null || idProdCR === "null" || idProdCR === "" || idProdCR === 0 || idProdCR === "0" || idProdCR === " ") {
+           /*  if ( idProdCR === null || idProdCR === "null" || idProdCR === "" || idProdCR === 0 || idProdCR === "0" || idProdCR === " ") {
                 if(cotizacionId != null || cotizacionId != "null" || cotizacionId != "" || cotizacionId != 0 || cotizacionId != "0" || cotizacionId != " "){
                     const Token = await GetTokenMAG();
                     console.log("Token obtenido:", Token);
@@ -2163,7 +2140,7 @@ export const GetCotChatbot = async (req, res) => {
             }else{
                 console.log("No se actualiza el idProdCR, obteniendo nuevo idProdCR");
             }
-            console.log(!data.genero)
+            console.log(!data.genero) */
 
             // Verificar campos faltantes
             if (!data.nombre) camposFaltantes.push('Nombre');
