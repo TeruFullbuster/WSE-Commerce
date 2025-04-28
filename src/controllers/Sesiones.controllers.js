@@ -2165,7 +2165,7 @@ export const GetCotChatbot = async (req, res) => {
                 console.log("Campos faltantes:", camposFaltantes);
                 const HashID = await gethashfromoriginalid(originalId)
                 console.log("HashID:", HashID);
-                urlEcommerce = 'https://segurointeligente.mx/e-commerce/#/?Session=' + HashID;
+                urlEcommerce = 'https://segurointeligente.mx/e-commerce/#/?Sesion=' + HashID;
             }    
             // Organizar los datos en diferentes secciones
             const response = {
