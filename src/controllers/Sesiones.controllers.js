@@ -2342,6 +2342,74 @@ export const UpdateNumber = async (req, res) => {
     }
 };
 
+export const UpdateNumberTicket = async (req, res) => {
+    const { id } = req.params;
+    const { Aseguradora, Ramo, Poliza } = req.body;
+
+    try {
+        if (!id) {
+            return res.status(400).json({ message: "ID no proporcionado en la URL" });
+        }
+
+        // Validar que todos vengan con contenido
+        if (!Aseguradora || !Ramo || !Poliza) {
+            return res.status(400).json({ message: "Todos los campos (Aseguradora, Ramo y Poliza) son obligatorios" });
+        }
+
+        // Validar que Aseguradora y Ramo sean solo letras (sin números)
+        const soloLetrasRegex = /^[A-Za-zÁÉÍÓÚáéíóúÑñ\s]+$/;
+
+        if (!soloLetrasRegex.test(Aseguradora)) {
+            return res.status(400).json({ message: "El campo 'Aseguradora' solo puede contener letras" });
+        }
+
+        if (!soloLetrasRegex.test(Ramo)) {
+            return res.status(400).json({ message: "El campo 'Ramo' solo puede contener letras" });
+        }
+
+        // Mapeo de campos
+        const camposActualizables = {
+            aseguradora: Aseguradora,
+            num_cotizacion: Ramo,
+            Documento: Poliza
+        };
+
+        let updateQuery = `UPDATE SesionesFantasma SET `;
+        const updateValues = [];
+
+        for (const campoSQL in camposActualizables) {
+            updateQuery += `${campoSQL} = ?, `;
+            updateValues.push(camposActualizables[campoSQL]);
+        }
+
+        updateQuery = updateQuery.slice(0, -2); // quitar coma final
+        updateQuery += ` WHERE id = ?`;
+        updateValues.push(id);
+
+        const [result] = await pool.query(updateQuery, updateValues);
+
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ message: "No se encontró el registro o no hubo cambios" });
+        }
+
+        const HashID = await gethashfromoriginalid(id);
+
+        res.json({
+            message: "Prospecto actualizado exitosamente",
+            hash: HashID || null,
+            ticket: "#00000"
+        });
+
+    } catch (error) {
+        console.error("❌ Error en el UPDATE:", error);
+        return res.status(500).json({
+            message: "Error interno en la actualización",
+            error: error.message
+        });
+    }
+};
+
+
 
 export const SendMessageAutomatizado = async (req, res) => {
     try {
