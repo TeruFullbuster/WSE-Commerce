@@ -172,7 +172,11 @@ const ObtenerResource = (Origen) =>{
 
 export const createProspecto = async (req, res) => {
     const { marca, modelo, submarca, descripcion, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, 
-        gclid, utm, leadsource, aseguradoracampana, firstPage, isComparator, idGrupo, IPSesion, cvic } = req.body;
+        gclid, utm, leadsource, firstPage, isComparator, idGrupo, IPSesion, cvic } = req.body;
+
+    // Tomar cualquiera de los dos nombres del campo aseguradora
+    const aseguradoraCampana = req.body.aseguradoraCampana || req.body.aseguradoracampana || '';
+
     const fecha_creacion = new Date();
     const paso = 0;
 
@@ -181,36 +185,36 @@ export const createProspecto = async (req, res) => {
     try {
         // Construir la consulta SQL dinámicamente
         let query = 'INSERT INTO SesionesFantasma (marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoracampana, firstPage' ;
-        let values = [marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoracampana || '', firstPage];
+        let values = [marca, modelo, submarca, nombre, apellido_paterno, edad, genero, codigo_postal, telefono, correo, gclid, utm, fecha_creacion, paso, leadsource, aseguradoraCampana, firstPage];
 
         // Solo agregar descripcion si está presente y no es vacía
         if (descripcion && descripcion.trim() !== '') {
-            query += ', descripcion'; // Añadir descripcion al query
-            values.push(descripcion);  // Añadir descripcion al array de valores
+            query += ', descripcion';
+            values.push(descripcion);
         }
 
         // Solo agregar cvic si está presente y no es vacía
         if (cvic && cvic.trim() !== '') {
-            query += ', cevic'; // Añadir descripcion al query
-            values.push(cvic);  // Añadir descripcion al array de valores
+            query += ', cevic';
+            values.push(cvic);
         }
 
         // Solo agregar isComparator si está presente y no es vacía
         if (isComparator && isComparator.trim() !== '') {
-            query += ', isComparator'; // Añadir isComparator al query
-            values.push(isComparator);  // Añadir isComparator al array de valores
+            query += ', isComparator';
+            values.push(isComparator);
         }
 
         // Solo agregar idGrupo si está presente y no es vacía
         if (idGrupo && idGrupo.trim() !== '') {
-            query += ', idGrupo'; // Añadir idGrupo al query
-            values.push(idGrupo);  // Añadir idGrupo al array de valores
+            query += ', idGrupo';
+            values.push(idGrupo);
         }
 
         // Solo agregar IPSesion si está presente y no es vacía
         if (IPSesion && IPSesion.trim() !== '') {
-            query += ', ipSesion'; // Añadir IPSesion al query
-            values.push(IPSesion);  // Añadir IPSesion al array de valores
+            query += ', ipSesion';
+            values.push(IPSesion);
         }
 
         // Cerrar la parte de columnas y añadir los placeholders para los valores
@@ -220,29 +224,28 @@ export const createProspecto = async (req, res) => {
         const [rows] = await pool.query(query, values);
 
         // Generar un hash del ID recién insertado
-        const hashedID = generarHash(rows.insertId); // Hasheamos el ID recién insertado
-        // Insertamos el hash y el ID original en la nueva tabla
+        const hashedID = generarHash(rows.insertId);
         await pool.query('INSERT INTO HashToID (original_id, hashed_id) VALUES (?, ?)', [rows.insertId, hashedID]);
-        
+
         // Respuesta exitosa
         res.send({
             message: "Registro Exitoso",
-            id: hashedID, // ID real insertado en la base de datos
-            hashId: hashedID, // ID hasheado para la URL
+            id: hashedID,
+            hashId: hashedID,
             idPasado: rows.insertId,
             marca,
             modelo,
             submarca,
-            aseguradoracampana: rows.aseguradoracampana || ''
+            aseguradoracampana: aseguradoraCampana
         });
     } catch (error) {
-        // Manejo de errores
         return res.status(500).json({
             message: 'Algo está mal',
             respuesta: error
         });
     }
 };
+
 
 
 // Paso 1: Actualizar con Datos del Paso 1
