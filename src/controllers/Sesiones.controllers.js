@@ -2245,7 +2245,7 @@ export const UpdateNumber = async (req, res) => {
     } = req.body;  // Extraemos el body con los datos
 
     try {
-        // Obtener el original_id a partir del idCotMAG (id en la URL)
+        // Obtener el original_id a partir del id (id en la URL)
         const originalId = id;  // El id en la URL es el id normal para la búsqueda
         if (!originalId) {
             return res.status(404).json({ message: "ID no encontrado en la base de datos" });
@@ -2289,8 +2289,9 @@ export const UpdateNumber = async (req, res) => {
         if (updatedData.cevic === undefined || updatedData.cevic === 0) camposFaltantes.push('cevic');
         if (updatedData.descripcion === undefined || updatedData.descripcion === 0) camposFaltantes.push('descripcion');
         if (updatedData.precio_cotizacion === undefined || updatedData.precio_cotizacion === 0) camposFaltantes.push('precio_cotizacion'); 
-        console.log(camposFaltantes)
 
+        console.log(camposFaltantes)
+        console.log(idCotMAG)
         // Si hay campos faltantes, retornamos un mensaje
         if (camposFaltantes.length > 0) {
             return res.status(400).json({
@@ -2315,8 +2316,8 @@ export const UpdateNumber = async (req, res) => {
         // Eliminar la última coma y espacio
         updateQuery = updateQuery.slice(0, -2); // Eliminar la coma final
 
-        updateQuery += ` WHERE id = ?`; // Usamos el idCotMAG para la búsqueda
-        updateValues.push(originalId); // El idCotMAG de la base de datos
+        updateQuery += ` WHERE id = ?`; // Usamos el id para la búsqueda
+        updateValues.push(originalId); // El id de la base de datos
 
         // Ejecutar la consulta SQL para actualizar los datos
         const [result] = await pool.query(updateQuery, updateValues);
