@@ -755,7 +755,19 @@ async function fetchProspectsEcommerce() {
 async function postProspect(prospect, token) {
     try {
         let response, result;
-
+        // Verificar si ya existe un duplicado antes de enviar
+        const { duplicado, data: duplicadoData } = await verificarDuplicadoCRM(prospect);
+        if (duplicado) {
+            console.log("⛔ Prospecto duplicado. No se enviará a CRM.");
+            const updateDup = await ActualizaLeadIDCPY(prospect.id, "700");
+            return {
+                success: false,
+                error: "Prospecto duplicado en CRM.",
+                respuesta: duplicadoData,
+                update: updateDup
+            };
+        }
+        
         switch (true) {
             case (prospect.paso === 5):
                 // Enviar en paralelo a Zoho CRM y Zoho Desk
@@ -883,6 +895,45 @@ export async function RecuperaProspectos(req, res) {
     } catch (error) {
         console.error('Error en RecuperaProspectos:', error);
         res.status(500).json({ message: 'Error en la ejecución', error });
+    }
+}
+
+async function verificarDuplicadoCRM(prospect) {
+    try {
+        const body = JSON.stringify({
+            phone: "+52" + prospect.telefono
+        });
+
+        const response = await fetch("https://wsgenerico.segurointeligente.mx/Zoho/CRM/SearchDuplicated", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body,
+            redirect: "follow"
+        });
+
+        const data = await response.json();
+
+        // Si se encontró duplicado y NO se debe continuar
+        if (data?.Adelante === false) {
+            console.warn("🚫 Duplicado detectado:", data.Message);
+            return {
+                duplicado: true,
+                data
+            };
+        }
+
+        return {
+            duplicado: false,
+            data
+        };
+    } catch (error) {
+        console.error("❌ Error al verificar duplicado:", error);
+        return {
+            duplicado: false, // Permite continuar si el servicio de duplicados falla
+            error
+        };
     }
 }
 
