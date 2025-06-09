@@ -2,7 +2,7 @@ import e from 'cors';
 import { pool } from '../db.js'
 import fetch from 'node-fetch';
 import jwt from 'jsonwebtoken'
-import bcrypt from 'bcrypt'
+import bcrypt from 'bcryptjs';
 import moment from 'moment-timezone';
 import crypto from 'crypto';
 import { SECRET_KEY } from '../config.js';

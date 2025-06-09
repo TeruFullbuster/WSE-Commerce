@@ -136,6 +136,7 @@ Tu tarea es escanear el documento proporcionado y recuperar la información más
 
 🔹 Campos a Extraer (Todos los Ramos)
 📌 Datos Generales (Aplica para todos los tipos de pólizas)
+Genero si existe podra aparecer como Sexo  / Gender 
 NombreContratante → Nombre del asegurado o empresa que contrata la póliza.
 RazonSocial → Razón social en caso de ser persona moral.
 NoPoliza → Número de póliza del documento.
@@ -295,11 +296,13 @@ DIR METRO SUR	FLORIDA	FLORIDA	AGENTES	127252	SONIA LAURA GONZALEZ RODRIGUEZ	0K11
      - **Salida en JSON:** "DireccionAseguradora": "Nuevo León 1, Col. Condesa, CDMX"
 
 ---
+📌 Consideración si existe un campo con el formato "Sexo / Gender ", deberas colocarlo en el JSON como "Sexo" o "Genero" dependiendo de la aseguradora. y regresar el valor correspondiente.
 
 Ejemplo de Salida JSON
 CLAVE MAPFRE: 0109-0010-0019
 {
   "NombreContratante": "OSCAR ALBERTO REYNAL BAEZA",
+  "Genero": "Masculino",
   "NoPoliza": "0065709A",
   "RFC": "RUJA960807TM2",
   "CURP": "RUJA960807HDFNRN06",
