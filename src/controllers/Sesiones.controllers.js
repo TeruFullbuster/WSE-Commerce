@@ -1662,7 +1662,7 @@ const raw = JSON.stringify({
     "modelo": data.modelo, // SI
     "subMarca": data.submarca, // SI
     "cPostal": data.codigo_postal, // SI
-    "idGrupo": data.idGrupo, // SI
+    "idGrupo": "35", // SI
     "emailVendedor": "e-commerce@segurointeligente.mx", // SI
     "formaPago": "CONTADO", // SI
     "fechaNacimiento": data.edad, // SI
