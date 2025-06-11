@@ -1896,6 +1896,8 @@ async function sendCRM(token, prospect) {
             Estatus_Lead_Prospecto = 'Contacto Efectivo'
             Owner = '2731176000300503001'
             prospect.descripcion += ` Placas: ${prospect.placas || "N/A"} NIV: ${prospect.niv || "N/A"} Número de Motor: ${prospect.num_motor || "N/A"}`;
+
+            NotificaCliq(`Error en Emisión Propsecto ${prospect.nombre}, Póliza: ${prospect.Documento}`, '878483316')
         }
         // Si el paso es 4, agregar placas, NIV y número de motor
         if (prospect.paso === 6) {
@@ -2531,3 +2533,26 @@ function BuscarAsignado(aseguradora){
       return '212945000002365270';
   }
 }
+
+function NotificaCliq(Mensaje, id){
+    const myHeaders = new Headers();
+    myHeaders.append("Content-Type", "application/json");
+
+    const raw = JSON.stringify({
+    "mensaje": Mensaje,
+    "user": id
+    });
+
+    const requestOptions = {
+    method: "POST",
+    headers: myHeaders,
+    body: raw,
+    redirect: "follow"
+    };
+
+    fetch("https://wsgenerico.segurointeligente.mx/Zoho/Cliq/SendAlertDirecto", requestOptions)
+    .then((response) => response.json())
+    .then((result) => console.log(result))
+    .catch((error) => console.error(error));
+}
+
