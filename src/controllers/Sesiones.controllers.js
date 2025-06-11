@@ -1987,7 +1987,7 @@ async function sendDESK (token, data) {
                     "category": "E-COMMERCE",
                     "subCategory": "E-COMMERCE",
                     "statusType": "Open",
-                    "subject": `Póliza sin cobro - E-commerce - ${data.aseguradoraCampana}`,
+                    "subject": `Póliza sin cobro - E-commerce - ${data.aseguradoracampana}`,
                     "departmentId": "212945000303532029",
                     "channel": "WS",
                     "resolution": "Urgente",
@@ -1996,12 +1996,12 @@ async function sendDESK (token, data) {
                     "timeEntryCount": "0",
                     "email": "aruiz@segurointeligente.mx",
                     "contactId": "212945000225587005",
-                    "assigneeId": "",
+                    "assigneeId": BuscarAsignado(data.aseguradoracampana),
                     "description": `Fallo en cobro, hay poliza, pero no hay cobro idDocto: ${data.idDocto} Póliza/OT: ${data.Documento} URL: ${data.urlDocto} Tipo Tarjeta: ${data.tTarjeta} Banco: ${data.Banco} Fecha de ultima modificación: ${data.ultima_actualizacionMexico}`,
                     "status": "Nuevo",
                     "customFields": {
                         "Cobranza": "--Ninguna--",
-                        "Aseguradora": data.aseguradoraCampana,
+                        "Aseguradora": data.aseguradoracampana,
                         "ID_CRM": "",
                         "Medio_de_pago": "--Ninguna--",
                         "Numero_de_poliza": data.Documento,
@@ -2465,8 +2465,6 @@ export const UpdateNumberTicket = async (req, res) => {
     }
 };
 
-
-
 export const SendMessageAutomatizado = async (req, res) => {
     try {
         const [rows] = await pool.query('CALL FetchProspectsSendWA()');
@@ -2515,4 +2513,21 @@ export const SendMessageAutomatizado = async (req, res) => {
     }
 };
 
-
+function BuscarAsignado(aseguradora){
+    switch (aseguradora.toLowerCase()) {
+    case 'axa':
+      return '212945000297985143';
+    case 'qualitas':
+      return '212945000297985143';
+    case 'gnp':
+      return '212945000297985143';
+    case 'ana':
+      return '212945000297985143';
+    case 'mapfre':
+      return '212945000297985143';
+    case 'chubb':
+      return '212945000297985143';
+    default:
+      return '212945000002365270';
+  }
+}
