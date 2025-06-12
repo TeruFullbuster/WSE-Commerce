@@ -900,8 +900,18 @@ export async function RecuperaProspectos(req, res) {
 
 async function verificarDuplicadoCRM(prospect) {
     try {
+        // ⚠️ Salto para número de pruebas
+        const telefonoLimpio = prospect.telefono.replace(/\D/g, ""); // Elimina espacios y guiones
+        if (telefonoLimpio === "5586882821") {
+            console.log("🔍 Número de prueba detectado, se ignora duplicado.");
+            return {
+                duplicado: false,
+                data: { Message: "Número de prueba omitido de validación" }
+            };
+        }
+
         const body = JSON.stringify({
-            phone: "+52" + prospect.telefono
+            phone: "+52" + telefonoLimpio
         });
 
         const response = await fetch("https://wsgenerico.segurointeligente.mx/Zoho/CRM/SearchDuplicated", {
@@ -915,7 +925,6 @@ async function verificarDuplicadoCRM(prospect) {
 
         const data = await response.json();
 
-        // Si se encontró duplicado y NO se debe continuar
         if (data?.Adelante === false) {
             console.warn("🚫 Duplicado detectado:", data.Message);
             return {
@@ -2467,51 +2476,85 @@ export const UpdateNumberTicket = async (req, res) => {
     }
 };
 
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+
 export const SendMessageAutomatizado = async (req, res) => {
     try {
         const [rows] = await pool.query('CALL FetchProspectsSendWA()');
 
-        if (rows.length === 0 || !rows[0][0]) {
+        if (!rows.length || !rows[0][0]) {
             return res.status(200).json({ message: "No hay registros para enviar" });
         }
 
-        const prospectos = rows[0]; // todos los prospectos
+        const prospectos = rows[0];
+
+        // Configuración
+        const tiempoTotalDisponible = 180000; // 3 minutos
+        const delayPorMensaje = 10000; // 10 segundos entre mensajes
+        const maxEnviosPermitidos = Math.floor(tiempoTotalDisponible / delayPorMensaje);
+
+        console.log(`⏳ Tiempo disponible: ${tiempoTotalDisponible}ms`);
+        console.log(`⌛ Delay por mensaje: ${delayPorMensaje}ms`);
+        console.log(`📦 Se enviarán máximo: ${maxEnviosPermitidos} mensajes`);
+
+        let enviados = 0;
 
         for (const prospecto of prospectos) {
+            if (enviados >= maxEnviosPermitidos) {
+                console.log(`⛔ Límite de envíos alcanzado (${enviados}/${maxEnviosPermitidos})`);
+                break;
+            }
+
             const numero = prospecto.telefono;
             const nombreCompleto = `${prospecto.nombre} ${prospecto.apellido_paterno}`;
+            const yaAtendido = prospecto.whatsapp === 1; // Ajusta si es otro campo
 
-            if (!numero || !nombreCompleto) continue; // si falta número o nombre, brincamos
+            if (!numero || !nombreCompleto || yaAtendido) {
+                console.log(`⏩ Prospecto omitido ID: ${prospecto.id}`);
+                continue;
+            }
 
-            // Codificamos el nombre para que pueda ir en la URL
             const nombreEncoded = encodeURIComponent(nombreCompleto);
-
             const url = `http://switchyard.proxy.rlwy.net:41277/api/messages/send/${numero}/${nombreEncoded}`;
 
-            console.log("Enviando a:", url);
+            console.log(`📨 Enviando a: ${url}`);
 
             try {
                 const response = await fetch(url, { method: "GET" });
                 const result = await response.json();
-                console.log("Resultado de envío:", result);
+                console.log("📬 Resultado:", result);
 
                 if (result.success) {
-                    // Update a la base de datos para marcar que ya se envió
                     await pool.query('UPDATE SesionesFantasma SET whatsapp = 1 WHERE id = ?', [prospecto.id]);
-                    console.log(`WhatsApp enviado y actualizado para ID: ${prospecto.id}`);
+                    enviados++;
+                    console.log(`✅ WhatsApp enviado y actualizado para ID: ${prospecto.id}`);
                 } else {
-                    console.error(`Error al enviar WhatsApp a ${numero}:`, result);
+                    console.warn(`❌ Fallo al enviar WhatsApp a ${numero}`, result);
                 }
+
             } catch (error) {
-                console.error(`Error en el envío del WhatsApp a ${numero}:`, error.message);
+                console.error(`❌ Error al enviar WhatsApp a ${numero}:`, error.message);
+            }
+
+            // Esperamos antes de seguir
+            if (enviados < maxEnviosPermitidos) {
+                await delay(delayPorMensaje);
             }
         }
 
-        return res.status(200).json({ message: "Proceso de envío de WhatsApps finalizado." });
+        return res.status(200).json({
+            message: "Proceso de envío de WhatsApps finalizado.",
+            enviados,
+            delayPorMensaje,
+            tiempoTotalDisponible
+        });
 
     } catch (error) {
-        console.error("Error general:", error.message);
-        return res.status(500).json({ message: "Error en el proceso de envío de WhatsApp", error: error.message });
+        console.error("❌ Error general:", error.message);
+        return res.status(500).json({
+            message: "Error en el proceso de envío de WhatsApp",
+            error: error.message
+        });
     }
 };
 
