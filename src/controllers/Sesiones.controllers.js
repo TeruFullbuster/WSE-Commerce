@@ -2559,6 +2559,7 @@ export const SendMessageAutomatizado = async (req, res) => {
 };
 
 function BuscarAsignado(aseguradora){
+    console.log(aseguradora)
     switch (aseguradora.toLowerCase()) {
     case 'axa':
       return '212945000297985143';
@@ -2599,3 +2600,16 @@ function NotificaCliq(Mensaje, id){
     .catch((error) => console.error(error));
 }
 
+
+
+/* const Data = {
+    aseguradoracampana : 'AXA',
+    idDocto: 12031,
+    Documento : "Algo",
+    urlDocto : "URL",
+    tTarjeta: "Plastico",
+    Banco: "Banco de Banco",
+    ultima_actualizacionMexico: "Ayer"
+}
+
+sendDESK('42B9958C93333809FCBC3C16E20F608E', Data) */
